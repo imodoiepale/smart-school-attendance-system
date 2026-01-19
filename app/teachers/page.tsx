@@ -3,7 +3,6 @@ import { redirect } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, AlertCircle, Clock } from "lucide-react"
-import { getProfileData } from "@/lib/profileData" // Import getProfileData
 
 export default async function TeacherPortal() {
   const supabase = await createClient()
@@ -36,11 +35,8 @@ export default async function TeacherPortal() {
     absent: classLogs.filter((l) => l.status === "absent").length,
   }
 
-  // Get profile data
-  const profileData = await getProfileData(user.id)
-
   return (
-    <div className="space-y-8">
+    <div className="p-8 space-y-8">
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
