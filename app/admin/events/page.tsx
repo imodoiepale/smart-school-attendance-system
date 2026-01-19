@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plus, MapPin, Calendar, Users } from "lucide-react"
-import { getStatusColor } from "@/utils/statusColor" // Import getStatusColor
+import { getStatusColor } from "@/utils/statusColor" // Import getStatusColor function
 
 export default async function SpecialEventsManagement() {
   const supabase = await createClient()

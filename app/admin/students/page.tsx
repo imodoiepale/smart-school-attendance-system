@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Plus, Upload, Trash2, Edit } from "lucide-react"
-import DashboardHeader from "@/components/dashboard-header" // Import DashboardHeader component
+import DashboardHeader from "@/components/DashboardHeader" // Import DashboardHeader component
 
 export default async function StudentManagement() {
   const supabase = await createClient()
