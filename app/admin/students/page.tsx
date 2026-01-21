@@ -46,7 +46,7 @@ export default function StudentManagement() {
 
   const handleDelete = async (user_id: string) => {
     if (!confirm("Are you sure you want to delete this student?")) return
-    
+
     const response = await fetch(`/api/students?user_id=${user_id}`, { method: "DELETE" })
     if (response.ok) {
       fetchStudents()
@@ -108,8 +108,8 @@ export default function StudentManagement() {
           <CardContent className="pt-6">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input 
-                placeholder="Search by name, student ID, or class..." 
+              <Input
+                placeholder="Search by name, student ID, or class..."
                 className="w-full pl-10"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -178,16 +178,16 @@ export default function StudentManagement() {
                           </span>
                         </td>
                         <td className="py-3 px-4 flex gap-2">
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="sm"
-                            onClick={() => router.push(`/students/${student.user_id}`)}
+                            onClick={() => router.push(`/admin/students/${student.user_id}`)}
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
                             onClick={() => handleDelete(student.user_id)}
                           >
@@ -204,12 +204,12 @@ export default function StudentManagement() {
         </Card>
       </main>
 
-      <AddStudentModal 
-        open={addModalOpen} 
+      <AddStudentModal
+        open={addModalOpen}
         onOpenChange={(open) => {
           setAddModalOpen(open)
           if (!open) fetchStudents()
-        }} 
+        }}
       />
     </div>
   )

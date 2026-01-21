@@ -2,7 +2,8 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, Wifi, WifiOff, RefreshCw } from "lucide-react"
+import { Wifi, WifiOff, RefreshCw } from "lucide-react"
+import { AddCameraModal } from "@/components/admin/AddCameraModal"
 
 export default async function CameraManagement() {
   const supabase = await createClient()
@@ -17,12 +18,12 @@ export default async function CameraManagement() {
 
   // Fetch cameras
   const { data: cameras } = await supabase
-    .from("cameras")
+    .from("camera_metadata")
     .select("*")
     .order("created_at", { ascending: false })
 
   const cameraData = cameras || []
-  const onlineCameras = cameraData.filter((c) => c.status === "online").length
+  const onlineCameras = cameraData.filter((c) => c.is_online).length
   const totalCameras = cameraData.length
 
   return (
@@ -33,10 +34,7 @@ export default async function CameraManagement() {
           <h1 className="text-4xl font-bold text-gray-900">Camera Management</h1>
           <p className="text-gray-600 mt-2">Monitor and configure facial recognition cameras</p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="w-4 h-4 mr-2" />
-          Add Camera
-        </Button>
+        <AddCameraModal />
       </div>
 
       {/* Stats Cards */}
@@ -94,10 +92,15 @@ export default async function CameraManagement() {
                 ) : (
                   cameraData.map((camera) => (
                     <tr key={camera.id} className="border-b border-gray-200 hover:bg-gray-50">
-                      <td className="py-3 px-4 font-medium">{camera.location || camera.name}</td>
+                      <td className="py-3 px-4 font-medium">
+                        <div className="flex flex-col">
+                          <span>{camera.display_name}</span>
+                          <span className="text-xs text-muted-foreground">{camera.location_tag}</span>
+                        </div>
+                      </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
-                          {camera.status === "online" ? (
+                          {camera.is_online ? (
                             <>
                               <Wifi className="w-4 h-4 text-green-600" />
                               <span className="text-green-600">Online</span>
@@ -115,7 +118,7 @@ export default async function CameraManagement() {
                           ? new Date(camera.last_heartbeat).toLocaleTimeString()
                           : "Never"}
                       </td>
-                      <td className="py-3 px-4">{camera.detection_count_today || 0}</td>
+                      <td className="py-3 px-4 py-8 text-center">{camera.total_detections_today || 0}</td>
                       <td className="py-3 px-4 flex gap-2">
                         <Button variant="ghost" size="sm">
                           <RefreshCw className="w-4 h-4" />

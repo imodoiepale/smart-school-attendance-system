@@ -2,8 +2,9 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, MapPin, Calendar, Users } from "lucide-react"
-import { getStatusColor } from "@/utils/statusColor" // Import getStatusColor function
+import { MapPin, Calendar, Users } from "lucide-react"
+import { getStatusColor } from "@/utils/statusColor"
+import { CreateEventModal } from "@/components/admin/CreateEventModal"
 
 export default async function SpecialEventsManagement() {
   const supabase = await createClient()
@@ -41,10 +42,7 @@ export default async function SpecialEventsManagement() {
           <h1 className="text-4xl font-bold text-gray-900">Special Events Management</h1>
           <p className="text-gray-600 mt-2">Manage field trips, sports events, and activities</p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="w-4 h-4 mr-2" />
-          Create Event
-        </Button>
+        <CreateEventModal />
       </div>
 
       {/* Events Grid */}
@@ -53,10 +51,9 @@ export default async function SpecialEventsManagement() {
           <CardContent className="py-12 text-center">
             <Calendar className="w-12 h-12 mx-auto text-gray-300 mb-4" />
             <p className="text-gray-500 mb-4">No events created yet</p>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Create First Event
-            </Button>
+            <div className="flex justify-center">
+              <CreateEventModal />
+            </div>
           </CardContent>
         </Card>
       ) : (
