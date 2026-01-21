@@ -317,6 +317,7 @@ CREATE TABLE public.user_registry (
   person_type text NOT NULL CHECK (person_type = ANY (ARRAY['student'::text, 'teacher'::text, 'staff'::text, 'visitor'::text])),
   grade text,
   class text,
+  stream text,
   house text,
   parent_phone text,
   parent_email text,
