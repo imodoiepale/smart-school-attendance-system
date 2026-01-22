@@ -4,6 +4,7 @@ import { ModernHeader } from "@/components/modern-header"
 import { Phone, MessageCircle, Calendar, TrendingUp, Clock, MapPin, Camera, CheckCircle, AlertCircle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { AttendanceHistory } from "@/components/attendance/attendance-history"
 
 // Helper to format timestamps
 const formatTime = (dateString: string) => {
@@ -108,35 +109,39 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
               <div className="flex justify-between items-start">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">{student.full_name}</h2>
-                  <p className="text-blue-600 font-medium">{student.student_id || student.user_id}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-blue-600 font-medium">{student.student_id || student.user_id}</p>
+                    <Badge variant="outline" className="text-[10px] h-5 px-1 bg-gray-50">Student</Badge>
+                  </div>
                 </div>
                 <div className="flex gap-2">
-                  <button className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600">
+                  <button className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors">
                     <Phone className="w-4 h-4" />
                   </button>
-                  <button className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600">
+                  <button className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors">
                     <MessageCircle className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 text-sm">
-                <div className="p-3 bg-gray-50 rounded-lg">
+                <div className="p-3 bg-gray-50 rounded-lg border border-transparent hover:border-blue-100 transition-colors">
                   <p className="text-gray-500 text-xs">Class</p>
                   <p className="font-medium text-gray-900">{student.class || 'N/A'}</p>
                 </div>
-                <div className="p-3 bg-gray-50 rounded-lg">
+                <div className="p-3 bg-gray-50 rounded-lg border border-transparent hover:border-blue-100 transition-colors">
                   <p className="text-gray-500 text-xs">House</p>
                   <p className="font-medium text-gray-900">{student.house || 'N/A'}</p>
                 </div>
-                <div className="p-3 bg-gray-50 rounded-lg">
+                <div className="p-3 bg-gray-50 rounded-lg border border-transparent hover:border-blue-100 transition-colors">
                   <p className="text-gray-500 text-xs">Parent Phone</p>
                   <p className="font-medium text-gray-900">{student.parent_phone || 'N/A'}</p>
                 </div>
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-gray-500 text-xs">Last Seen</p>
-                  <p className="font-medium text-gray-900">
-                    {lastAttendance ? `${formatDate(lastAttendance.toISOString())} ${formatTime(lastAttendance.toISOString())}` : 'Never'}
+                <div className="p-3 bg-gray-50 rounded-lg border border-transparent hover:border-blue-100 transition-colors">
+                  <p className="text-gray-500 text-xs text-blue-500 font-bold uppercase tracking-tight">Last Seen Location</p>
+                  <p className="font-medium text-gray-900 flex items-center gap-1">
+                    <MapPin className="w-3 h-3 text-red-500" />
+                    {student.last_seen_camera || 'N/A'}
                   </p>
                 </div>
               </div>
@@ -146,39 +151,42 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
 
         {/* 2. Attendance Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="border-l-4 border-l-blue-500">
+          <Card className="border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
             <CardContent className="p-6 flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 mb-1">Days Present (30d)</p>
-                <p className="text-3xl font-bold text-gray-900">{totalDays}</p>
+                <p className="text-sm text-gray-500 mb-1 font-medium tracking-tight uppercase px-1">Days Present (30d)</p>
+                <p className="text-3xl font-extrabold text-gray-900">{totalDays}</p>
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                 <Calendar className="w-6 h-6 text-blue-600" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-l-4 border-l-green-500">
+          <Card className="border-l-4 border-l-green-500 hover:shadow-md transition-shadow">
             <CardContent className="p-6 flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 mb-1">On Time Rate</p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {logs.length > 0 ? Math.round((presentCount / logs.length) * 100) : 0}%
-                </p>
+                <p className="text-sm text-gray-500 mb-1 font-medium tracking-tight uppercase px-1">Attendance Quality</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-3xl font-extrabold text-gray-900">
+                    {logs.length > 0 ? Math.round((presentCount / logs.length) * 100) : 0}%
+                  </p>
+                  <span className="text-xs text-green-600 font-bold">On-Time</span>
+                </div>
               </div>
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
                 <CheckCircle className="w-6 h-6 text-green-600" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-l-4 border-l-orange-500">
+          <Card className="border-l-4 border-l-orange-500 hover:shadow-md transition-shadow">
             <CardContent className="p-6 flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 mb-1">Late Arrivals</p>
-                <p className="text-3xl font-bold text-gray-900">{lateCount}</p>
+                <p className="text-sm text-gray-500 mb-1 font-medium tracking-tight uppercase px-1">Punctuality Alerts</p>
+                <p className="text-3xl font-extrabold text-gray-900">{lateCount}</p>
               </div>
-              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
                 <Clock className="w-6 h-6 text-orange-600" />
               </div>
             </CardContent>
@@ -188,80 +196,25 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* 3. PRIMARY COLUMN: Attendance Logs (Expanded) */}
           <div className="xl:col-span-2 space-y-6">
-            <Card className="overflow-hidden border-t-4 border-t-blue-600">
-              <CardHeader className="bg-gray-50/50 border-b pb-4">
+            <Card className="overflow-hidden border-t-4 border-t-blue-600 shadow-lg">
+              <CardHeader className="bg-white border-b pb-4">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 text-xl">
-                    <Clock className="w-5 h-5 text-blue-600" />
-                    Attendance Log History
-                  </CardTitle>
-                  <Badge variant="outline" className="bg-white">Last 30 Days</Badge>
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-xl font-bold tracking-tight">
+                      <Clock className="w-5 h-5 text-blue-600" />
+                      Biometric Attendance Logs
+                    </CardTitle>
+                    <p className="text-xs text-gray-500 mt-1">Click any record row to view detailed biometric and device location info.</p>
+                  </div>
+                  <Badge variant="outline" className="bg-gray-50 text-blue-600 border-blue-100">Interactive View</Badge>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50 text-gray-500">
-                      <tr>
-                        <th className="px-6 py-3 text-left font-medium">Date & Time</th>
-                        <th className="px-6 py-3 text-left font-medium">Event</th>
-                        <th className="px-6 py-3 text-left font-medium">Camera</th>
-                        <th className="px-6 py-3 text-left font-medium">Capture</th>
-                        <th className="px-6 py-3 text-right font-medium">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {logs.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                            No attendance records found for this period.
-                          </td>
-                        </tr>
-                      ) : (
-                        logs.map((log) => (
-                          <tr key={log.id} className="hover:bg-gray-50/80 transition-colors">
-                            <td className="px-6 py-4">
-                              <div className="flex flex-col">
-                                <span className="font-medium text-gray-900">{formatDate(log.timestamp)}</span>
-                                <span className="text-gray-500 text-xs">{formatTime(log.timestamp)}</span>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${log.event_type === 'entry' ? 'bg-blue-50 text-blue-700' : 'bg-orange-50 text-orange-700'
-                                }`}>
-                                {log.event_type === 'entry' ? <TrendingUp className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                                {log.event_type.charAt(0).toUpperCase() + log.event_type.slice(1)}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-2 text-gray-600">
-                                <Camera className="w-4 h-4 text-gray-400" />
-                                <span className="truncate max-w-[120px]" title={log.camera_name}>{log.camera_name || 'Main Gate'}</span>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              {log.capture_image_url ? (
-                                <div className="w-10 h-10 rounded overflow-hidden border border-gray-200">
-                                  <img src={log.capture_image_url} alt="Capture" className="w-full h-full object-cover" />
-                                </div>
-                              ) : (
-                                <span className="text-xs text-gray-400 italic">No image</span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                              <Badge variant={
-                                log.attendance_status === 'present' || log.attendance_status === 'on_time' ? 'default' :
-                                  log.attendance_status?.includes('late') ? 'secondary' : 'destructive'
-                              } className="capitalize">
-                                {log.attendance_status?.replace('_', ' ') || 'Unknown'}
-                              </Badge>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                <AttendanceHistory
+                  logs={logs}
+                  formatDate={formatDate}
+                  formatTime={formatTime}
+                />
               </CardContent>
             </Card>
 

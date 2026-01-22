@@ -1,0 +1,12 @@
+2026-01-21T16:24:55.780Z - Fetch https://qrtwgeypflxschcgzinb.supabase.co/auth/v1/user took 503ms
+2026-01-21T16:24:56.545Z - Fetch https://qrtwgeypflxschcgzinb.supabase.co/rest/v1/user_registry?select=id%2Cuser_id%2Cfull_name%2Cphoto_url%2Cclass&person_type=eq.student&order=full_name.asc&limit=50 took 715ms
+2026-01-21T16:24:56.914Z - Fetch https://qrtwgeypflxschcgzinb.supabase.co/rest/v1/attendance_logs?select=id%2Cuser_id%2Cuser_name%2Cevent_type%2Ctimestamp%2Ccreated_at%2Cattendance_status%2Ccapture_image_url&person_type=eq.student&created_at=gte.2026-01-19T16%3A24%3A56.565Z&created_at=lte.2026-01-25T20%3A59%3A59.565Z&order=created_at.desc took 327ms
+2026-01-21T16:24:58.475Z - Fetch https://qrtwgeypflxschcgzinb.supabase.co/auth/v1/user took 467ms
+2026-01-21T16:24:58.940Z - Fetch https://qrtwgeypflxschcgzinb.supabase.co/rest/v1/attendance_logs?select=id%2Cuser_id%2Cuser_name%2Cevent_type%2Ctimestamp%2Ccreated_at%2Cattendance_status&order=created_at.desc&limit=20 took 335ms
+2026-01-21T16:24:59.691Z - Fetch https://qrtwgeypflxschcgzinb.supabase.co/rest/v1/user_registry?select=id%2Ccurrent_status&person_type=eq.student&limit=1000 took 1074ms
+2026-01-21T16:24:59.747Z - Fetch https://qrtwgeypflxschcgzinb.supabase.co/rest/v1/attendance_logs?select=id%2Cuser_id%2Cuser_name%2Cevent_type%2Ctimestamp%2Ccreated_at%2Cattendance_status&created_at=gte.2026-01-20T21%3A00%3A00.000Z&order=created_at.desc&limit=100 took 1113ms
+2026-01-21T16:25:00.174Z - Fetch https://qrtwgeypflxschcgzinb.supabase.co/rest/v1/assignments?select=*&status=eq.active&order=due_date.asc&limit=5 took 305ms
+2026-01-21T16:25:00.198Z - Fetch https://qrtwgeypflxschcgzinb.supabase.co/rest/v1/school_events?select=*&start_datetime=gte.2026-01-21T16%3A24%3A59.838Z&order=start_datetime.asc&limit=5 took 342ms
+2026-01-21T16:34:53.594Z - Fetch https://qrtwgeypflxschcgzinb.supabase.co/auth/v1/user took 685ms
+2026-01-21T16:34:54.191Z - Fetch https://qrtwgeypflxschcgzinb.supabase.co/rest/v1/user_registry?select=id%2Cuser_id%2Cfull_name%2Cphoto_url%2Cclass&person_type=eq.student&order=full_name.asc&limit=50 took 572ms
+2026-01-21T16:34:54.763Z - Fetch https://qrtwgeypflxschcgzinb.supabase.co/rest/v1/attendance_logs?select=id%2Cuser_id%2Cuser_name%2Cevent_type%2Ctimestamp%2Ccreated_at%2Cattendance_status%2Ccapture_image_url&person_type=eq.student&created_at=gte.2026-01-19T16%3A34%3A54.315Z&created_at=lte.2026-01-25T20%3A59%3A59.315Z&order=created_at.desc took 437ms

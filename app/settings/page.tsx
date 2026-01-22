@@ -8,9 +8,11 @@ import { Bell, Lock, Database, Shield } from "lucide-react"
 export default async function Settings() {
   const supabase = await createClient()
 
+  console.time('👤 settings.getUser')
   const {
     data: { user },
   } = await supabase.auth.getUser()
+  console.timeEnd('👤 settings.getUser')
 
   if (!user) {
     redirect("/auth/login")

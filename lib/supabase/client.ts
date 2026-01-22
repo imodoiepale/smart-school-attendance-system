@@ -22,7 +22,7 @@ export function createClient() {
           // Add timeout to prevent hanging
           return fetch(url, {
             ...options,
-            signal: AbortSignal.timeout(10000), // 10 second timeout
+            signal: AbortSignal.timeout(60000), // 60 second timeout
           })
         },
       },
