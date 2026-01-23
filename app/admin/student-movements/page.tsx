@@ -19,13 +19,38 @@ export default function StudentMovements() {
     checkUser()
     fetchMovements()
     
-    // Real-time subscription
+    // Real-time subscription with optimized updates
+    const channelName = `student_movements-${Math.random().toString(36).substring(7)}`
     const channel = supabase
-      .channel('student_movements')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'student_movements' }, () => {
-        fetchMovements()
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'student_movements' },
+        (payload) => {
+          setMovements(prev => [payload.new, ...prev].slice(0, 100))
+          console.log('📍 New movement:', payload.new.movement_type)
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'student_movements' },
+        (payload) => {
+          setMovements(prev => prev.map(m => m.id === payload.new.id ? payload.new : m))
+          console.log('✏️ Movement updated:', payload.new.id)
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'student_movements' },
+        (payload) => {
+          setMovements(prev => prev.filter(m => m.id !== payload.old.id))
+          console.log('🗑️ Movement deleted:', payload.old.id)
+        }
+      )
+      .subscribe((status, err) => {
+        console.log('📡 Student movements realtime:', status)
+        if (err) console.error('Subscription error:', err)
       })
-      .subscribe()
 
     return () => {
       supabase.removeChannel(channel)

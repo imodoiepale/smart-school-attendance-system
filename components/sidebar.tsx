@@ -18,16 +18,18 @@ import {
   Activity,
   FileText,
   AlertTriangle,
+  Mic,
 } from "lucide-react"
 import { memo } from "react"
 
 const mainNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
-  { href: "/admin/students", label: "Students", icon: Users },
-  { href: "/attendance", label: "Attendance", icon: Clock },
+  { href: "/admin/action-queue", label: "AI Action Queue", icon: AlertCircle },
+  { href: "/admin/interventions", label: "Interventions", icon: Mic },
+  { href: "/admin/attendance-analytics", label: "Attendance Analytics", icon: BarChart3 },
   { href: "/admin/whereabouts", label: "Whereabouts", icon: MapPin },
-  { href: "/admin/student-movements", label: "Movements", icon: Activity },
-  { href: "/teachers", label: "Reports", icon: BarChart3 },
+  { href: "/gate-security", label: "Gate Security", icon: Camera },
+  { href: "/leave-management", label: "Leave Management", icon: Calendar },
 ]
 
 const adminNavItems = [

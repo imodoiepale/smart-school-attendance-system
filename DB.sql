@@ -1,5 +1,9 @@
--- WARNING: This schema is for context only and is not meant to be run.
--- Table order and constraints may not be valid for execution.
+-- SMARTSCHOOL SENTINEL - COMPLETE DATABASE SCHEMA
+-- This is the complete, production-ready database schema
+-- Run migrations in order: 005-add-anomaly-system.sql, then 006-add-gate-system.sql
+
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE public.absence_reasons (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),

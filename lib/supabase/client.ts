@@ -1,5 +1,7 @@
 import { createBrowserClient } from "@supabase/ssr"
 
+let supabaseInstance: ReturnType<typeof createBrowserClient> | null = null
+
 export function createClient() {
   // Check if environment variables are set
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
@@ -8,7 +10,12 @@ export function createClient() {
     throw new Error('Supabase configuration missing. Check ENV_SETUP.md')
   }
 
-  return createBrowserClient(
+  // Return existing instance to prevent multiple WebSocket connections
+  if (supabaseInstance) {
+    return supabaseInstance
+  }
+
+  supabaseInstance = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
@@ -16,6 +23,11 @@ export function createClient() {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 10,
+        },
       },
       global: {
         fetch: (url, options = {}) => {
@@ -28,4 +40,6 @@ export function createClient() {
       },
     }
   )
+
+  return supabaseInstance
 }

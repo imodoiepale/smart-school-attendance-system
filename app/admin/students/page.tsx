@@ -65,43 +65,76 @@ export default function StudentManagement() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <ModernHeader user={user} title="Student Management" subtitle="Manage student records" />
-
-      <main className="max-w-[1600px] mx-auto p-6 space-y-6">
-        {/* Header with Actions */}
-        <div className="flex justify-between items-center">
-          <div>
-            <p className="text-gray-600">Total Students: {filteredStudents.length}</p>
+      <div className="bg-white border-b">
+        <div className="max-w-[1600px] mx-auto p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Student Management</h1>
+              <p className="text-gray-600 mt-1">Manage student records and profiles</p>
+            </div>
+            <div className="flex gap-3">
+              <Button onClick={() => setAddModalOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Student
+              </Button>
+              <Button variant="outline">
+                <Upload className="w-4 h-4 mr-2" />
+                Bulk Import
+              </Button>
+              <Button variant="outline">
+                <Download className="w-4 h-4 mr-2" />
+                Export
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={() => router.push('/admin/students/unregistered')} variant="outline" className="border-orange-300 text-orange-700 hover:bg-orange-50">
-              <UserPlus className="w-4 h-4 mr-2" />
-              Unregistered People
-            </Button>
-            <Button onClick={() => setAddModalOpen(true)} className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Student
-            </Button>
-            <Button variant="outline" onClick={async () => {
-              const response = await fetch('/api/students/bulk-download-images')
-              if (response.ok) {
-                const blob = await response.blob()
-                const url = window.URL.createObjectURL(blob)
-                const a = document.createElement('a')
-                a.href = url
-                a.download = `student-photos-${new Date().toISOString().split('T')[0]}.zip`
-                a.click()
-              }
-            }}>
-              <Download className="w-4 h-4 mr-2" />
-              Download All Photos
-            </Button>
-            <Button variant="outline">
-              <Upload className="w-4 h-4 mr-2" />
-              Bulk Import CSV
-            </Button>
+          
+          <div className="grid grid-cols-4 gap-4 mt-6">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-blue-600 mb-1">{students.length}</div>
+                  <div className="text-sm text-gray-600">Total Students</div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-green-600 mb-1">
+                    {students.filter(s => s.current_status === 'on_campus').length}
+                  </div>
+                  <div className="text-sm text-gray-600">On Campus</div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-purple-600 mb-1">
+                    {students.filter(s => s.is_active).length}
+                  </div>
+                  <div className="text-sm text-gray-600">Active</div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-orange-600 mb-1">
+                    {new Set(students.map(s => s.class)).size}
+                  </div>
+                  <div className="text-sm text-gray-600">Classes</div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
+      </div>
+
+      <main className="max-w-[1600px] mx-auto p-6 space-y-6">
 
         {/* Search Bar */}
         <Card>

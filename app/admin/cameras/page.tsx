@@ -27,46 +27,61 @@ export default async function CameraManagement() {
   const totalCameras = cameraData.length
 
   return (
-    <div className="space-y-8">
-      {/* Header with Actions */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-4xl font-bold text-gray-900">Camera Management</h1>
-          <p className="text-gray-600 mt-2">Monitor and configure facial recognition cameras</p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-white border-b">
+        <div className="max-w-[1600px] mx-auto p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Camera Management</h1>
+              <p className="text-gray-600 mt-1">Monitor and configure facial recognition cameras</p>
+            </div>
+            <AddCameraModal />
+          </div>
+          
+          <div className="grid grid-cols-4 gap-4 mt-6">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-blue-600 mb-1">{totalCameras}</div>
+                  <div className="text-sm text-gray-600">Total Cameras</div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-green-600 mb-1">{onlineCameras}</div>
+                  <div className="text-sm text-gray-600">Online</div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-red-600 mb-1">{totalCameras - onlineCameras}</div>
+                  <div className="text-sm text-gray-600">Offline</div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-purple-600 mb-1">
+                    {cameraData.reduce((sum, c) => sum + (c.total_detections_today || 0), 0)}
+                  </div>
+                  <div className="text-sm text-gray-600">Detections Today</div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-        <AddCameraModal />
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <main className="max-w-[1600px] mx-auto p-6 space-y-6">
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Cameras</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-gray-900">{totalCameras}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-green-600">Online</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-green-600">{onlineCameras}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-red-600">Offline</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-red-600">{totalCameras - onlineCameras}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Cameras List */}
-      <Card>
         <CardHeader>
           <CardTitle>All Cameras</CardTitle>
         </CardHeader>
@@ -131,7 +146,8 @@ export default async function CameraManagement() {
             </table>
           </div>
         </CardContent>
-      </Card>
+        </Card>
+      </main>
     </div>
   )
 }

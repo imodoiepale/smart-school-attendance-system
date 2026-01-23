@@ -62,45 +62,58 @@ export default function FlaggedStudents() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <ModernHeader user={user} title="Flagged Students" subtitle="At-risk students requiring intervention" />
+      <div className="bg-white border-b">
+        <div className="max-w-[1600px] mx-auto p-6">
+          <h1 className="text-3xl font-bold text-gray-900">Flagged Students</h1>
+          <p className="text-gray-600 mt-1">At-risk students requiring intervention and support</p>
+          
+          <div className="grid grid-cols-4 gap-4 mt-6">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-blue-600 mb-1">{flaggedStudents.length}</div>
+                  <div className="text-sm text-gray-600">Total Flagged</div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-orange-600 mb-1">
+                    {flaggedStudents.filter(s => s.intervention_status === "pending").length}
+                  </div>
+                  <div className="text-sm text-gray-600">Pending</div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-purple-600 mb-1">
+                    {flaggedStudents.filter(s => s.intervention_status === "in_progress").length}
+                  </div>
+                  <div className="text-sm text-gray-600">In Progress</div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-green-600 mb-1">
+                    {flaggedStudents.filter(s => s.intervention_status === "resolved").length}
+                  </div>
+                  <div className="text-sm text-gray-600">Resolved</div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
 
       <main className="max-w-[1600px] mx-auto p-6 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-2xl font-bold">{flaggedStudents.filter(s => s.intervention_status === "pending").length}</p>
-                  <p className="text-sm text-muted-foreground">Pending</p>
-                </div>
-                <Clock className="w-8 h-8 text-yellow-500" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-2xl font-bold">{flaggedStudents.filter(s => s.intervention_status === "in_progress").length}</p>
-                  <p className="text-sm text-muted-foreground">In Progress</p>
-                </div>
-                <AlertTriangle className="w-8 h-8 text-orange-500" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-2xl font-bold">{flaggedStudents.filter(s => s.intervention_status === "resolved").length}</p>
-                  <p className="text-sm text-muted-foreground">Resolved</p>
-                </div>
-                <CheckCircle className="w-8 h-8 text-green-500" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
         <Card>
           <CardHeader>
             <CardTitle>All Flagged Students</CardTitle>

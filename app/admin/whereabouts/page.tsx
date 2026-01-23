@@ -21,13 +21,38 @@ export default function StudentWhereabouts() {
     checkUser()
     fetchWhereabouts()
     
-    // Real-time subscription
+    // Real-time subscription with optimized updates
+    const channelName = `student_whereabouts-${Math.random().toString(36).substring(7)}`
     const channel = supabase
-      .channel('student_whereabouts')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'student_whereabouts' }, () => {
-        fetchWhereabouts()
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'student_whereabouts' },
+        (payload) => {
+          setWhereabouts(prev => [payload.new, ...prev])
+          console.log('📍 New whereabouts record:', payload.new.user_id)
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'student_whereabouts' },
+        (payload) => {
+          setWhereabouts(prev => prev.map(w => w.user_id === payload.new.user_id ? payload.new : w))
+          console.log('✏️ Whereabouts updated:', payload.new.user_id)
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'student_whereabouts' },
+        (payload) => {
+          setWhereabouts(prev => prev.filter(w => w.user_id !== payload.old.user_id))
+          console.log('🗑️ Whereabouts deleted:', payload.old.user_id)
+        }
+      )
+      .subscribe((status, err) => {
+        console.log('📡 Student whereabouts realtime:', status)
+        if (err) console.error('Subscription error:', err)
       })
-      .subscribe()
 
     return () => {
       supabase.removeChannel(channel)

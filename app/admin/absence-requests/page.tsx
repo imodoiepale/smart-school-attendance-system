@@ -83,9 +83,56 @@ export default function AbsenceRequests() {
 
   if (!user) return null
 
+  const pendingCount = requests.filter(r => r.approval_status === 'pending').length
+  const approvedCount = requests.filter(r => r.approval_status === 'approved').length
+  const rejectedCount = requests.filter(r => r.approval_status === 'rejected').length
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <ModernHeader user={user} title="Absence Requests" subtitle="Manage student absence requests" />
+      <div className="bg-white border-b">
+        <div className="max-w-[1600px] mx-auto p-6">
+          <h1 className="text-3xl font-bold text-gray-900">Absence Requests</h1>
+          <p className="text-gray-600 mt-1">Review and manage student absence requests</p>
+          
+          <div className="grid grid-cols-4 gap-4 mt-6">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-blue-600 mb-1">{requests.length}</div>
+                  <div className="text-sm text-gray-600">Total Requests</div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-orange-600 mb-1">{pendingCount}</div>
+                  <div className="text-sm text-gray-600">Pending</div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-green-600 mb-1">{approvedCount}</div>
+                  <div className="text-sm text-gray-600">Approved</div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-red-600 mb-1">{rejectedCount}</div>
+                  <div className="text-sm text-gray-600">Rejected</div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
 
       <main className="max-w-[1600px] mx-auto p-6 space-y-6">
         <div className="flex gap-2">

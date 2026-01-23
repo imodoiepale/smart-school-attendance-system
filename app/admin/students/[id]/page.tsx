@@ -1,388 +1,242 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { ModernHeader } from "@/components/modern-header"
-import { Phone, MessageCircle, Calendar, TrendingUp, Clock, MapPin, Camera, CheckCircle, AlertCircle } from "lucide-react"
+import Link from "next/link"
+import { Phone, MessageCircle, ChevronRight, Home, MapPin, Download, Eye, Filter } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Breadcrumbs } from "@/components/breadcrumbs"
+import { Button } from "@/components/ui/button"
+import { StudentAttendanceTable } from "@/components/admin/student-attendance-table"
 
-// Helper to format timestamps
 const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit'
-    })
+    return new Date(dateString).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
 }
 
 const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric'
-    })
+    return new Date(dateString).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 }
 
 export default async function StudentProfilePage({ params }: { params: Promise<{ id: string }> }) {
-    // 1. Await params before using them (Fix for Next.js 15+)
     const { id } = await params
-
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
+    if (!user) redirect("/auth/login")
 
-    if (!user) {
-        redirect("/auth/login")
-    }
-
-    // Fetch student data using user_id (from params)
     const { data: student } = await supabase
         .from("user_registry")
         .select("*")
-        .eq("user_id", id) // Use the awaited id
+        .eq("user_id", id)
         .eq("person_type", "student")
         .single()
 
-    if (!student) {
-        redirect("/admin/students")
-    }
+    if (!student) redirect("/admin/students")
 
-    // Fetch attendance logs (Expanded to include more details for the table)
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
+    // Fetch ALL attendance_logs fields for comprehensive display
     const { data: attendanceLogs } = await supabase
         .from("attendance_logs")
-        .select("id, event_type, timestamp, attendance_status, camera_name, capture_image_url")
+        .select(`
+            id,
+            user_id,
+            user_name,
+            person_type,
+            event_type,
+            period_number,
+            subject,
+            camera_id,
+            camera_name,
+            camera_group,
+            timestamp,
+            log_date,
+            attendance_status,
+            confidence_score,
+            capture_image_url,
+            created_at
+        `)
         .eq("user_id", student.user_id)
         .eq("person_type", "student")
         .gte("timestamp", thirtyDaysAgo.toISOString())
         .order("timestamp", { ascending: false })
-        .limit(50) // Limit to last 50 records for performance
+        .limit(500)
 
     const logs = attendanceLogs || []
-
-    // Calculate summary stats
     const totalDays = new Set(logs.map(l => new Date(l.timestamp).toDateString())).size
     const presentCount = logs.filter(l => l.attendance_status === 'present' || l.attendance_status === 'on_time').length
     const lateCount = logs.filter(l => l.attendance_status?.includes('late')).length
     const lastAttendance = logs.length > 0 ? new Date(logs[0].timestamp) : null
-
-    // Mock academic data (Secondary priority)
-    const subjects = [
-        { name: 'Mathematics', lastGrade: 'A', avgGrade: 'B+', improvement: 'Improved' },
-        { name: 'English', lastGrade: 'B+', avgGrade: 'B', improvement: 'Stable' },
-        { name: 'Science', lastGrade: 'C', avgGrade: 'A', improvement: 'Improved' },
-    ]
+    const onTimeRate = logs.length > 0 ? Math.round((presentCount / logs.length) * 100) : 0
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col gap-4">
-                <Breadcrumbs
-                    items={[
-                        { label: "Dashboard", href: "/admin/dashboard" },
-                        { label: "Students", href: "/admin/students" },
-                        { label: student.full_name, href: `/admin/students/${id}` },
-                    ]}
-                />
-                <ModernHeader
-                    user={user}
-                    title={`Student Profile`}
-                    subtitle={`Viewing record for ${student.full_name}`}
-                />
+        <div className="space-y-4">
+            {/* Compact Breadcrumb */}
+            <nav className="flex items-center gap-1 text-xs text-gray-500">
+                <Link href="/admin/dashboard" className="hover:text-blue-600 flex items-center gap-1"><Home className="w-3 h-3" />Home</Link>
+                <ChevronRight className="w-3 h-3" />
+                <Link href="/admin/students" className="hover:text-blue-600">Students</Link>
+                <ChevronRight className="w-3 h-3" />
+                <span className="text-gray-900 font-medium">{student.full_name}</span>
+            </nav>
+
+            {/* Compact Header with Student Info + Inline Stats */}
+            <div className="bg-white rounded-lg border shadow-sm p-4">
+                <div className="flex items-start gap-4">
+                    {/* Avatar */}
+                    <div className="relative shrink-0">
+                        {student.photo_url ? (
+                            <img src={student.photo_url} alt={student.full_name} className="w-16 h-16 rounded-full object-cover border-2 border-white shadow" />
+                        ) : (
+                            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xl font-bold shadow">
+                                {student.full_name?.charAt(0).toUpperCase()}
+                            </div>
+                        )}
+                        <span className={`absolute bottom-0 right-0 w-4 h-4 border-2 border-white rounded-full ${student.current_status === 'on_campus' ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <h1 className="text-lg font-bold text-gray-900">{student.full_name}</h1>
+                                <p className="text-sm text-blue-600 font-medium">{student.user_id}</p>
+                            </div>
+                            <div className="flex gap-1.5">
+                                <Button variant="outline" size="sm" className="h-7 w-7 p-0"><Phone className="w-3.5 h-3.5" /></Button>
+                                <Button variant="outline" size="sm" className="h-7 w-7 p-0"><MessageCircle className="w-3.5 h-3.5" /></Button>
+                            </div>
+                        </div>
+
+                        {/* Inline Info Row */}
+                        <div className="flex flex-wrap gap-4 mt-2 text-xs">
+                            <div><span className="text-gray-500">Class:</span> <span className="font-semibold text-gray-900">{student.class || 'N/A'}</span></div>
+                            <div><span className="text-gray-500">Stream:</span> <span className="font-semibold text-gray-900">{student.stream || 'N/A'}</span></div>
+                            <div><span className="text-gray-500">House:</span> <span className="font-semibold text-gray-900">{student.house || 'N/A'}</span></div>
+                            <div><span className="text-gray-500">Parent:</span> <span className="font-semibold text-gray-900">{student.parent_phone || 'N/A'}</span></div>
+                        </div>
+                    </div>
+
+                    {/* Inline Stats */}
+                    <div className="hidden lg:flex gap-3 shrink-0">
+                        <div className="text-center px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-100">
+                            <div className="text-lg font-bold text-blue-600">{totalDays}</div>
+                            <div className="text-[10px] text-blue-600">Days Present</div>
+                        </div>
+                        <div className="text-center px-3 py-1.5 bg-green-50 rounded-lg border border-green-100">
+                            <div className="text-lg font-bold text-green-600">{onTimeRate}%</div>
+                            <div className="text-[10px] text-green-600">On Time</div>
+                        </div>
+                        <div className="text-center px-3 py-1.5 bg-orange-50 rounded-lg border border-orange-100">
+                            <div className="text-lg font-bold text-orange-600">{lateCount}</div>
+                            <div className="text-[10px] text-orange-600">Late</div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Mobile Stats Row */}
+                <div className="flex lg:hidden gap-2 mt-3 pt-3 border-t">
+                    <div className="flex-1 text-center py-1.5 bg-blue-50 rounded border border-blue-100">
+                        <div className="text-sm font-bold text-blue-600">{totalDays}</div>
+                        <div className="text-[9px] text-blue-600">Days</div>
+                    </div>
+                    <div className="flex-1 text-center py-1.5 bg-green-50 rounded border border-green-100">
+                        <div className="text-sm font-bold text-green-600">{onTimeRate}%</div>
+                        <div className="text-[9px] text-green-600">On Time</div>
+                    </div>
+                    <div className="flex-1 text-center py-1.5 bg-orange-50 rounded border border-orange-100">
+                        <div className="text-sm font-bold text-orange-600">{lateCount}</div>
+                        <div className="text-[9px] text-orange-600">Late</div>
+                    </div>
+                </div>
             </div>
 
-            <main className="space-y-6">
-                {/* 1. Student Identity Header */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <div className="flex flex-col md:flex-row items-start gap-6">
-                        {/* Profile Photo */}
-                        <div className="relative">
-                            {student.photo_url ? (
-                                <img
-                                    src={student.photo_url}
-                                    alt={student.full_name}
-                                    className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
-                                />
-                            ) : (
-                                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-3xl font-bold border-4 border-white shadow-lg">
-                                    {student.full_name?.charAt(0).toUpperCase()}
-                                </div>
-                            )}
-                            <span className={`absolute bottom-1 right-1 w-5 h-5 border-2 border-white rounded-full ${student.current_status === 'on_campus' ? 'bg-green-500' : 'bg-gray-400'}`}></span>
-                        </div>
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
+                {/* Left: Attendance Logs (3 cols) */}
+                <div className="xl:col-span-3">
+                    <StudentAttendanceTable logs={logs} studentName={student.full_name} userId={student.user_id} pageSize={50} />
+                </div>
 
-                        {/* Profile Info */}
-                        <div className="flex-1 w-full">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-gray-900">{student.full_name}</h2>
-                                    <p className="text-blue-600 font-medium">{student.student_id || student.user_id}</p>
+                {/* Right Sidebar */}
+                <div className="space-y-4">
+                    {/* Location & Status */}
+                    <Card className="border-0 shadow-sm">
+                        <CardHeader className="py-2 px-3 border-b">
+                            <CardTitle className="text-xs font-semibold flex items-center gap-1.5">
+                                <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                                Location & Status
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-3 space-y-2">
+                            <div className="p-2 bg-gray-50 rounded">
+                                <div className="text-[10px] text-gray-500">Current Status</div>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                    <span className={`w-2 h-2 rounded-full ${student.current_status === 'on_campus' ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                                    <span className="text-xs font-semibold">{student.current_status === 'on_campus' ? 'On Campus' : 'Off Campus'}</span>
                                 </div>
+                            </div>
+                            <div className="p-2 bg-gray-50 rounded">
+                                <div className="text-[10px] text-gray-500">Last Location</div>
+                                <div className="text-xs font-medium mt-0.5">{student.last_seen_camera || logs[0]?.camera_name || 'Main Gate'}</div>
+                            </div>
+                            <div className="p-2 bg-gray-50 rounded">
+                                <div className="text-[10px] text-gray-500">Last Seen</div>
+                                <div className="text-xs font-medium mt-0.5">{lastAttendance ? `${formatDate(lastAttendance.toISOString())} ${formatTime(lastAttendance.toISOString())}` : 'N/A'}</div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Recent Notices */}
+                    <Card className="border-0 shadow-sm">
+                        <CardHeader className="py-2 px-3 border-b">
+                            <CardTitle className="text-xs font-semibold">Recent Notices</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-2 space-y-2">
+                            <div className="p-2 bg-blue-50 rounded border border-blue-100">
                                 <div className="flex gap-2">
-                                    <button className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600">
-                                        <Phone className="w-4 h-4" />
-                                    </button>
-                                    <button className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600">
-                                        <MessageCircle className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 text-sm">
-                                <div className="p-3 bg-gray-50 rounded-lg">
-                                    <p className="text-gray-500 text-xs">Class</p>
-                                    <p className="font-medium text-gray-900">{student.class || 'N/A'}</p>
-                                </div>
-                                <div className="p-3 bg-gray-50 rounded-lg">
-                                    <p className="text-gray-500 text-xs">House</p>
-                                    <p className="font-medium text-gray-900">{student.house || 'N/A'}</p>
-                                </div>
-                                <div className="p-3 bg-gray-50 rounded-lg">
-                                    <p className="text-gray-500 text-xs">Parent Phone</p>
-                                    <p className="font-medium text-gray-900">{student.parent_phone || 'N/A'}</p>
-                                </div>
-                                <div className="p-3 bg-gray-50 rounded-lg">
-                                    <p className="text-gray-500 text-xs">Last Seen</p>
-                                    <p className="font-medium text-gray-900">
-                                        {lastAttendance ? `${formatDate(lastAttendance.toISOString())} ${formatTime(lastAttendance.toISOString())}` : 'Never'}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* 2. Attendance Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card className="border-l-4 border-l-blue-500">
-                        <CardContent className="p-6 flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">Days Present (30d)</p>
-                                <p className="text-3xl font-bold text-gray-900">{totalDays}</p>
-                            </div>
-                            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                                <Calendar className="w-6 h-6 text-blue-600" />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-l-4 border-l-green-500">
-                        <CardContent className="p-6 flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">On Time Rate</p>
-                                <p className="text-3xl font-bold text-gray-900">
-                                    {logs.length > 0 ? Math.round((presentCount / logs.length) * 100) : 0}%
-                                </p>
-                            </div>
-                            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                                <CheckCircle className="w-6 h-6 text-green-600" />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-l-4 border-l-orange-500">
-                        <CardContent className="p-6 flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">Late Arrivals</p>
-                                <p className="text-3xl font-bold text-gray-900">{lateCount}</p>
-                            </div>
-                            <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                                <Clock className="w-6 h-6 text-orange-600" />
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                    {/* 3. PRIMARY COLUMN: Attendance Logs (Expanded) */}
-                    <div className="xl:col-span-2 space-y-6">
-                        <Card className="overflow-hidden border-t-4 border-t-blue-600">
-                            <CardHeader className="bg-gray-50/50 border-b pb-4">
-                                <div className="flex items-center justify-between">
-                                    <CardTitle className="flex items-center gap-2 text-xl">
-                                        <Clock className="w-5 h-5 text-blue-600" />
-                                        Attendance Log History
-                                    </CardTitle>
-                                    <Badge variant="outline" className="bg-white">Last 30 Days</Badge>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="p-0">
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
-                                        <thead className="bg-gray-50 text-gray-500">
-                                            <tr>
-                                                <th className="px-6 py-3 text-left font-medium">Date & Time</th>
-                                                <th className="px-6 py-3 text-left font-medium">Event</th>
-                                                <th className="px-6 py-3 text-left font-medium">Camera</th>
-                                                <th className="px-6 py-3 text-left font-medium">Capture</th>
-                                                <th className="px-6 py-3 text-right font-medium">Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-100">
-                                            {logs.length === 0 ? (
-                                                <tr>
-                                                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                                                        No attendance records found for this period.
-                                                    </td>
-                                                </tr>
-                                            ) : (
-                                                logs.map((log) => (
-                                                    <tr key={log.id} className="hover:bg-gray-50/80 transition-colors">
-                                                        <td className="px-6 py-4">
-                                                            <div className="flex flex-col">
-                                                                <span className="font-medium text-gray-900">{formatDate(log.timestamp)}</span>
-                                                                <span className="text-gray-500 text-xs">{formatTime(log.timestamp)}</span>
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-6 py-4">
-                                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${log.event_type === 'entry' ? 'bg-blue-50 text-blue-700' : 'bg-orange-50 text-orange-700'
-                                                                }`}>
-                                                                {log.event_type === 'entry' ? <TrendingUp className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                                                                {log.event_type.charAt(0).toUpperCase() + log.event_type.slice(1)}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-6 py-4">
-                                                            <div className="flex items-center gap-2 text-gray-600">
-                                                                <Camera className="w-4 h-4 text-gray-400" />
-                                                                <span className="truncate max-w-[120px]" title={log.camera_name}>{log.camera_name || 'Main Gate'}</span>
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-6 py-4">
-                                                            {log.capture_image_url ? (
-                                                                <div className="w-10 h-10 rounded overflow-hidden border border-gray-200">
-                                                                    <img src={log.capture_image_url} alt="Capture" className="w-full h-full object-cover" />
-                                                                </div>
-                                                            ) : (
-                                                                <span className="text-xs text-gray-400 italic">No image</span>
-                                                            )}
-                                                        </td>
-                                                        <td className="px-6 py-4 text-right">
-                                                            <Badge variant={
-                                                                log.attendance_status === 'present' || log.attendance_status === 'on_time' ? 'default' :
-                                                                    log.attendance_status?.includes('late') ? 'secondary' : 'destructive'
-                                                            } className="capitalize">
-                                                                {log.attendance_status?.replace('_', ' ') || 'Unknown'}
-                                                            </Badge>
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Academic Performance (Secondary Priority) */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 opacity-80 hover:opacity-100 transition-opacity">
-                            <Card>
-                                <CardHeader className="pb-2">
-                                    <CardTitle className="text-base font-semibold text-gray-700">Academic Overview</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-4">
-                                        {subjects.map((subject, idx) => (
-                                            <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                                <span className="font-medium text-gray-700">{subject.name}</span>
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-sm font-bold text-gray-900">{subject.avgGrade}</span>
-                                                    <span className={`text-xs px-2 py-0.5 rounded-full ${subject.improvement === 'Improved' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-700'
-                                                        }`}>
-                                                        {subject.improvement}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        ))}
+                                    <div className="w-6 h-6 rounded-full bg-blue-200 flex items-center justify-center shrink-0">
+                                        <span className="text-[9px] font-bold text-blue-700">AD</span>
                                     </div>
-                                </CardContent>
-                            </Card>
-
-                            <Card>
-                                <CardHeader className="pb-2">
-                                    <CardTitle className="text-base font-semibold text-gray-700">Assignments</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="flex flex-col items-center justify-center py-6 text-center">
-                                        <div className="w-24 h-24 rounded-full border-8 border-blue-100 border-t-blue-600 flex items-center justify-center mb-4">
-                                            <span className="text-xl font-bold text-blue-600">85%</span>
-                                        </div>
-                                        <p className="text-sm text-gray-500">Assignment Completion Rate</p>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    </div>
-
-                    {/* 4. SIDEBAR: Notices & Quick Stats */}
-                    <div className="space-y-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-lg">Recent Notices</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    <div className="p-4 border border-blue-100 bg-blue-50 rounded-lg">
-                                        <div className="flex gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center flex-shrink-0">
-                                                <span className="text-xs font-bold text-blue-700">AD</span>
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-semibold text-gray-900">Admin Dept</p>
-                                                <p className="text-xs text-gray-500 mb-2">Yesterday, 10:00 AM</p>
-                                                <p className="text-sm text-gray-700 leading-relaxed">
-                                                    School will close early this Friday for staff development training. Pickup is at 1:00 PM.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="p-4 border border-gray-100 rounded-lg hover:bg-gray-50">
-                                        <div className="flex gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
-                                                <span className="text-xs font-bold text-purple-700">SC</span>
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-semibold text-gray-900">Science Club</p>
-                                                <p className="text-xs text-gray-500 mb-1">2 days ago</p>
-                                                <p className="text-sm text-gray-600">
-                                                    Science fair project submissions are due next Monday.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-lg">Location Status</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg mb-3">
-                                    <MapPin className="w-5 h-5 text-gray-500" />
                                     <div>
-                                        <p className="text-xs text-gray-500">Last Known Location</p>
-                                        <p className="font-medium text-sm">{student.last_seen_camera || logs[0]?.camera_name || 'Main Entrance'}</p>
+                                        <p className="text-[11px] font-semibold">Admin Dept</p>
+                                        <p className="text-[9px] text-gray-500">Yesterday, 10:00 AM</p>
+                                        <p className="text-[10px] text-gray-600 mt-1">School will close early this Friday for staff development training. Pickup is at 1:00 PM.</p>
                                     </div>
                                 </div>
-
-                                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                                    <AlertCircle className="w-5 h-5 text-gray-500" />
+                            </div>
+                            <div className="p-2 bg-purple-50 rounded border border-purple-100">
+                                <div className="flex gap-2">
+                                    <div className="w-6 h-6 rounded-full bg-purple-200 flex items-center justify-center shrink-0">
+                                        <span className="text-[9px] font-bold text-purple-700">SC</span>
+                                    </div>
                                     <div>
-                                        <p className="text-xs text-gray-500">Current Status</p>
-                                        <Badge variant={student.current_status === 'on_campus' ? 'default' : 'secondary'}>
-                                            {student.current_status === 'on_campus' ? 'On Campus' : 'Off Campus'}
-                                        </Badge>
+                                        <p className="text-[11px] font-semibold">Science Club</p>
+                                        <p className="text-[9px] text-gray-500">2 days ago</p>
+                                        <p className="text-[10px] text-gray-600 mt-1">Science fair project submissions are due next Monday.</p>
                                     </div>
                                 </div>
-                            </CardContent>
-                        </Card>
-                    </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Quick Actions */}
+                    <Card className="border-0 shadow-sm">
+                        <CardHeader className="py-2 px-3 border-b">
+                            <CardTitle className="text-xs font-semibold">Quick Actions</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-2 space-y-1.5">
+                            <Button variant="outline" size="sm" className="w-full h-7 text-[10px] justify-start gap-2">
+                                <Download className="w-3 h-3" /> Export Attendance
+                            </Button>
+                            <Button variant="outline" size="sm" className="w-full h-7 text-[10px] justify-start gap-2">
+                                <Eye className="w-3 h-3" /> View Full History
+                            </Button>
+                            <Button variant="outline" size="sm" className="w-full h-7 text-[10px] justify-start gap-2">
+                                <Filter className="w-3 h-3" /> Filter by Date
+                            </Button>
+                        </CardContent>
+                    </Card>
                 </div>
-            </main>
+            </div>
         </div>
     )
 }

@@ -48,18 +48,35 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
     redirect("/admin/students")
   }
 
-  // Fetch attendance logs (Expanded to include more details for the table)
+  // Fetch attendance logs with ALL comprehensive fields
   const thirtyDaysAgo = new Date()
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
   const { data: attendanceLogs } = await supabase
     .from("attendance_logs")
-    .select("id, event_type, timestamp, attendance_status, camera_name, capture_image_url")
+    .select(`
+      id,
+      user_id,
+      user_name,
+      person_type,
+      event_type,
+      period_number,
+      subject,
+      camera_id,
+      camera_name,
+      camera_group,
+      timestamp,
+      log_date,
+      attendance_status,
+      confidence_score,
+      capture_image_url,
+      created_at
+    `)
     .eq("user_id", student.user_id)
     .eq("person_type", "student")
     .gte("timestamp", thirtyDaysAgo.toISOString())
     .order("timestamp", { ascending: false })
-    .limit(50) // Limit to last 50 records for performance
+    .limit(50) // Initial load - pagination will fetch more
 
   const logs = attendanceLogs || []
 
@@ -214,6 +231,10 @@ export default async function StudentProfilePage({ params }: { params: Promise<{
                   logs={logs}
                   formatDate={formatDate}
                   formatTime={formatTime}
+                  userId={student.user_id}
+                  studentName={student.full_name}
+                  pageSize={50}
+                  showPagination={true}
                 />
               </CardContent>
             </Card>
