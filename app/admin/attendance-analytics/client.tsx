@@ -24,7 +24,10 @@ import {
   AttendanceLogDetailDialog, 
   CreateEventDialog, 
   AttendanceLogTable,
-  EventFormData 
+  EventFormData,
+  LiveEventManager,
+  RealtimeAttendanceGrid,
+  RealtimeAttendanceTable
 } from "./components"
 
 interface AttendanceAnalyticsClientProps {
@@ -320,15 +323,28 @@ export function AttendanceAnalyticsClient({
         query = query.eq('camera_id', cam)
       }
       
-      // Camera group filter - also check camera_name for matches like "form4A"
+      // Camera group filter - get camera_ids from the selected group and filter by those
       const camGroup = options?.cameraGroup ?? selectedCameraGroup
       if (camGroup !== 'all') {
         console.log('Filtering by camera group:', camGroup)
-        // Normalize the group for matching: "Form 4A" -> "form4a" pattern
-        const groupPattern = camGroup.toLowerCase().replace(/\s+/g, '')
-        console.log('Group pattern:', groupPattern)
-        // Try both camera_group and camera_name fields with pattern matching
-        query = query.or(`camera_group.ilike.%${groupPattern}%,camera_name.ilike.%${groupPattern}%`)
+        // Get all camera IDs that belong to this group
+        const groupCameraIds = cameras
+          .filter(c => {
+            const cameraGroup = (c.camera_group || '').toLowerCase().replace(/\s+/g, '')
+            const locationTag = (c.location_tag || '').toLowerCase().replace(/\s+/g, '')
+            const displayName = (c.display_name || '').toLowerCase().replace(/\s+/g, '')
+            const groupPattern = camGroup.toLowerCase().replace(/\s+/g, '')
+            return cameraGroup.includes(groupPattern) || 
+                   locationTag.includes(groupPattern) || 
+                   displayName.includes(groupPattern) ||
+                   groupPattern.includes(cameraGroup)
+          })
+          .map(c => c.camera_id)
+        
+        console.log('Group camera IDs:', groupCameraIds)
+        if (groupCameraIds.length > 0) {
+          query = query.in('camera_id', groupCameraIds)
+        }
       }
       
       // Status filter
@@ -803,6 +819,24 @@ export function AttendanceAnalyticsClient({
                 ))}
               </CollapsibleContent>
             </Collapsible>
+
+            {/* Live Event - Featured */}
+            <button
+              onClick={() => handleSidebarClick('live')}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
+                activeSection === 'live' 
+                  ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white font-medium shadow-md' 
+                  : 'bg-gradient-to-r from-red-50 to-orange-50 text-red-700 hover:from-red-100 hover:to-orange-100 border border-red-200'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${activeSection === 'live' ? 'bg-white' : 'bg-red-500'} animate-pulse`} />
+                Live Event
+              </div>
+              <Badge variant={activeSection === 'live' ? 'secondary' : 'destructive'} className="text-[10px] px-1.5 py-0">
+                NEW
+              </Badge>
+            </button>
 
             {/* Events */}
             <button
@@ -1441,6 +1475,20 @@ export function AttendanceAnalyticsClient({
               title="Weekly Attendance Logs"
               onLogClick={handleLogClick}
               maxHeight="400px"
+            />
+          </div>
+        )}
+
+        {/* Live Event Section */}
+        {activeSection === 'live' && (
+          <div className="space-y-4">
+            <LiveEventManager
+              students={students}
+              cameras={cameras}
+              initialLogs={realtimeAttendance}
+              onAttendanceUpdate={(logs) => {
+                setRealtimeAttendance(prev => [...logs, ...prev])
+              }}
             />
           </div>
         )}

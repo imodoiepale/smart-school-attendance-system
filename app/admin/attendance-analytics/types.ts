@@ -49,16 +49,32 @@ export interface Camera {
 
 export interface Event {
   id: string
-  name: string
-  description?: string
+  event_name: string
   event_type: string
-  start_date: string
-  end_date?: string
-  start_time?: string
-  end_time?: string
-  location?: string
-  is_active?: boolean
+  event_category?: string
+  event_location: string
+  is_offsite?: boolean
+  start_datetime: string
+  end_datetime: string
+  all_day_event?: boolean
+  participant_ids: string[]
+  participant_count: number
+  supervising_teacher_ids?: string[]
+  affected_periods?: number[]
+  replaces_regular_classes?: boolean
+  requires_exit_tracking?: boolean
+  requires_return_tracking?: boolean
+  expected_departure_time?: string
+  expected_return_time?: string
+  status?: string
+  departure_confirmed_at?: string
+  departure_confirmed_count?: number
+  return_confirmed_at?: string
+  return_confirmed_count?: number
+  notes?: string
+  created_by: string
   created_at?: string
+  updated_at?: string
 }
 
 export interface FormStructure {
@@ -76,7 +92,7 @@ export interface DateRange {
   to: Date | null
 }
 
-export type ActiveSection = 'students' | 'forms' | 'cameras' | 'events' | 'meals' | 'trends'
+export type ActiveSection = 'students' | 'forms' | 'cameras' | 'events' | 'meals' | 'trends' | 'live'
 
 // Utility functions
 export const formatTime = (dateString: string) => {
