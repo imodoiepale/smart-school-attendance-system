@@ -28,7 +28,7 @@ export function ChronicAbsenteeism() {
 
       if (allStudents) {
         const chronicList = await Promise.all(
-          allStudents.map(async (student) => {
+          allStudents.map(async (student: any) => {
             const { count: totalDays } = await supabase
               .from("attendance")
               .select("*", { count: "exact" })

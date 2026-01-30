@@ -26,7 +26,7 @@ export default function StudentMovements() {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'student_movements' },
-        (payload) => {
+        (payload: any) => {
           setMovements(prev => [payload.new, ...prev].slice(0, 100))
           console.log('📍 New movement:', payload.new.movement_type)
         }
@@ -34,20 +34,20 @@ export default function StudentMovements() {
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'student_movements' },
-        (payload) => {
-          setMovements(prev => prev.map(m => m.id === payload.new.id ? payload.new : m))
+        (payload: any) => {
+          setMovements(prev => prev.map((m: any) => m.id === payload.new.id ? payload.new : m))
           console.log('✏️ Movement updated:', payload.new.id)
         }
       )
       .on(
         'postgres_changes',
         { event: 'DELETE', schema: 'public', table: 'student_movements' },
-        (payload) => {
-          setMovements(prev => prev.filter(m => m.id !== payload.old.id))
+        (payload: any) => {
+          setMovements(prev => prev.filter((m: any) => m.id !== payload.old.id))
           console.log('🗑️ Movement deleted:', payload.old.id)
         }
       )
-      .subscribe((status, err) => {
+      .subscribe((status: string, err?: Error) => {
         console.log('📡 Student movements realtime:', status)
         if (err) console.error('Subscription error:', err)
       })

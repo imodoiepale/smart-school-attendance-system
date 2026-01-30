@@ -3,8 +3,9 @@ import { NextResponse } from 'next/server'
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   
@@ -20,7 +21,7 @@ export async function POST(
       resolved_at: new Date().toISOString(),
       resolved_by: user.email
     })
-    .eq('id', params.id)
+    .eq('id', id)
     .select()
     .single()
   

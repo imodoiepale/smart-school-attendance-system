@@ -146,7 +146,7 @@ export function AttendanceAnalyticsClient({
       totalCameras: cameras.length,
       activeCameras: cameras.filter(c => c.status === 'active').length,
       totalEvents: events.length,
-      upcomingEvents: events.filter(e => new Date(e.start_date) >= new Date()).length,
+      upcomingEvents: events.filter(e => new Date(e.start_datetime) >= new Date()).length,
     }
   }, [students, realtimeAttendance, cameras, events])
 
@@ -1272,14 +1272,16 @@ export function AttendanceAnalyticsClient({
             {/* Events List */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {events.map(event => {
-                const isUpcoming = new Date(event.start_date) >= new Date()
-                const isPast = new Date(event.end_date || event.start_date) < new Date()
+                const isUpcoming = new Date(event.start_datetime) >= new Date()
+                const isPast = new Date(event.end_datetime || event.start_datetime) < new Date()
+                const startTime = new Date(event.start_datetime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+                const endTime = event.end_datetime ? new Date(event.end_datetime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : null
                 
                 return (
                   <Card key={event.id} className="hover:shadow-md transition-shadow">
                     <CardHeader className="py-2 px-3 border-b">
                       <CardTitle className="text-sm font-semibold flex items-center justify-between">
-                        <span className="truncate">{event.name}</span>
+                        <span className="truncate">{event.event_name}</span>
                         <Badge variant={isUpcoming ? 'default' : isPast ? 'secondary' : 'outline'} className="text-[9px] shrink-0">
                           {isUpcoming ? 'Upcoming' : isPast ? 'Past' : 'Ongoing'}
                         </Badge>
@@ -1288,22 +1290,20 @@ export function AttendanceAnalyticsClient({
                     <CardContent className="p-3 space-y-2">
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <CalendarDays className="w-4 h-4" />
-                        <span>{formatDate(event.start_date)}</span>
+                        <span>{formatDate(event.start_datetime)}</span>
                       </div>
-                      {event.start_time && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Clock className="w-4 h-4" />
-                          <span>{event.start_time} {event.end_time ? `- ${event.end_time}` : ''}</span>
-                        </div>
-                      )}
-                      {event.location && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Clock className="w-4 h-4" />
+                        <span>{startTime} {endTime ? `- ${endTime}` : ''}</span>
+                      </div>
+                      {event.event_location && (
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <MapPin className="w-4 h-4" />
-                          <span>{event.location}</span>
+                          <span>{event.event_location}</span>
                         </div>
                       )}
-                      {event.description && (
-                        <p className="text-[11px] text-gray-500 line-clamp-2">{event.description}</p>
+                      {event.notes && (
+                        <p className="text-[11px] text-gray-500 line-clamp-2">{event.notes}</p>
                       )}
                       <Badge variant="outline" className="text-[9px]">{event.event_type}</Badge>
                     </CardContent>

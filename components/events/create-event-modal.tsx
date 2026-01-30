@@ -144,7 +144,7 @@ export function CreateEventModal({ open, onOpenChange }: CreateEventModalProps) 
               type="datetime-local"
               value={formData.expected_return_time}
               onChange={(e) => setFormData({ ...formData, expected_return_time: e.target.value })}
-              help="When students are expected to return"
+              title="When students are expected to return"
             />
           </div>
 

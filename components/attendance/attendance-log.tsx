@@ -46,10 +46,10 @@ export function AttendanceLog({ selectedDate }: AttendanceLogProps) {
         setRecords(data)
 
         const stats = {
-          present: data.filter((r) => r.status === "present").length,
-          absent: data.filter((r) => r.status === "absent").length,
-          late: data.filter((r) => r.status === "late").length,
-          unknown: data.filter((r) => r.status === "unknown").length,
+          present: data.filter((r: any) => r.status === "present").length,
+          absent: data.filter((r: any) => r.status === "absent").length,
+          late: data.filter((r: any) => r.status === "late").length,
+          unknown: data.filter((r: any) => r.status === "unknown").length,
         }
         setStats(stats)
       }

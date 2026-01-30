@@ -89,6 +89,11 @@ export function LiveEventManager({ students, cameras, initialLogs = [], onAttend
   const [isLoadingEvents, setIsLoadingEvents] = useState(false)
   const [showEventsSidebar, setShowEventsSidebar] = useState(true)
 
+  // Event details dialog state
+  const [viewingEvent, setViewingEvent] = useState<Event | null>(null)
+  const [eventAttendanceLogs, setEventAttendanceLogs] = useState<AttendanceLog[]>([])
+  const [isLoadingEventLogs, setIsLoadingEventLogs] = useState(false)
+
   // Filter students by selected forms
   const filteredStudents = students.filter(s => 
     selectedForms.length === 0 || selectedForms.includes(s.form || '')
@@ -404,6 +409,67 @@ export function LiveEventManager({ students, cameras, initialLogs = [], onAttend
     setSessionLogs([])
   }, [])
 
+  // View event details - fetch attendance logs for the event
+  const viewEventDetails = useCallback(async (event: Event) => {
+    setViewingEvent(event)
+    setIsLoadingEventLogs(true)
+    
+    try {
+      // Fetch attendance logs during the event time range
+      const { data, error } = await supabase
+        .from('attendance_logs')
+        .select('*')
+        .gte('timestamp', event.start_datetime)
+        .lte('timestamp', event.end_datetime)
+        .order('timestamp', { ascending: false })
+
+      if (!error && data) {
+        setEventAttendanceLogs(data)
+      }
+    } catch (err) {
+      console.error('❌ Error fetching event logs:', err)
+    }
+    
+    setIsLoadingEventLogs(false)
+  }, [supabase])
+
+  // Export attendance to CSV
+  const exportAttendanceCSV = useCallback((event: Event, logs: AttendanceLog[]) => {
+    // Deduplicate logs by user_id
+    const userMap = new Map<string, { log: AttendanceLog; count: number }>()
+    logs.forEach(log => {
+      const existing = userMap.get(log.user_id)
+      if (!existing) {
+        userMap.set(log.user_id, { log, count: 1 })
+      } else {
+        existing.count++
+      }
+    })
+
+    const rows = [
+      ['Event Name', 'Event Type', 'Start Time', 'End Time', 'Location'],
+      [event.event_name, event.event_type, event.start_datetime, event.end_datetime, event.event_location],
+      [],
+      ['User ID', 'Name', 'Person Type', 'Camera', 'First Detection', 'Detection Count', 'Confidence'],
+      ...Array.from(userMap.values()).map(({ log, count }) => [
+        log.user_id,
+        log.user_name,
+        log.person_type,
+        log.camera_name,
+        new Date(log.timestamp).toLocaleString(),
+        count.toString(),
+        log.confidence_score ? `${Math.round(log.confidence_score > 1 ? log.confidence_score : log.confidence_score * 100)}%` : '-'
+      ])
+    ]
+
+    const csvContent = rows.map(row => row.join(',')).join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `attendance_${event.event_name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`
+    link.click()
+  }, [])
+
   // Toggle camera selection
   const toggleCamera = (cameraId: string) => {
     setSelectedCameraIds(prev => 
@@ -557,7 +623,7 @@ export function LiveEventManager({ students, cameras, initialLogs = [], onAttend
                                   className="h-7 text-xs flex-1"
                                   onClick={(e) => {
                                     e.stopPropagation()
-                                    // View event logs
+                                    viewEventDetails(event)
                                   }}
                                 >
                                   <Eye className="w-3 h-3 mr-1" />
@@ -878,6 +944,163 @@ export function LiveEventManager({ students, cameras, initialLogs = [], onAttend
               End Event & Save
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Event Details Dialog */}
+      <Dialog open={!!viewingEvent} onOpenChange={(open) => !open && setViewingEvent(null)}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          {viewingEvent && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-xl">
+                  <CalendarDays className="w-6 h-6 text-blue-500" />
+                  {viewingEvent.event_name}
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-6 py-4">
+                {/* Event Info Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-[10px] text-blue-600 uppercase font-medium">Type</p>
+                    <p className="text-sm font-semibold text-blue-900">{viewingEvent.event_type}</p>
+                  </div>
+                  <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                    <p className="text-[10px] text-green-600 uppercase font-medium">Status</p>
+                    <p className="text-sm font-semibold text-green-900">{viewingEvent.status || 'Unknown'}</p>
+                  </div>
+                  <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                    <p className="text-[10px] text-purple-600 uppercase font-medium">Participants</p>
+                    <p className="text-sm font-semibold text-purple-900">{viewingEvent.participant_count}</p>
+                  </div>
+                  <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                    <p className="text-[10px] text-orange-600 uppercase font-medium">Detections</p>
+                    <p className="text-sm font-semibold text-orange-900">{eventAttendanceLogs.length}</p>
+                  </div>
+                </div>
+
+                {/* Time & Location */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <Clock className="w-4 h-4" /> Schedule
+                    </h4>
+                    <div className="p-3 bg-gray-50 rounded-lg space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Start:</span>
+                        <span className="font-medium">{new Date(viewingEvent.start_datetime).toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">End:</span>
+                        <span className="font-medium">{new Date(viewingEvent.end_datetime).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <Camera className="w-4 h-4" /> Location
+                    </h4>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <p className="text-sm font-medium">{viewingEvent.event_location}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                {viewingEvent.notes && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold text-gray-700">Notes</h4>
+                    <p className="text-sm text-gray-600 p-3 bg-gray-50 rounded-lg">{viewingEvent.notes}</p>
+                  </div>
+                )}
+
+                {/* Attendance Logs */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <Users className="w-4 h-4" /> Attendance Records
+                    </h4>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => exportAttendanceCSV(viewingEvent, eventAttendanceLogs)}
+                      disabled={eventAttendanceLogs.length === 0}
+                    >
+                      <CheckCircle2 className="w-3 h-3 mr-1" />
+                      Export CSV
+                    </Button>
+                  </div>
+                  
+                  {isLoadingEventLogs ? (
+                    <div className="p-8 text-center text-gray-500">
+                      <RefreshCw className="w-6 h-6 mx-auto animate-spin mb-2" />
+                      <p className="text-sm">Loading attendance records...</p>
+                    </div>
+                  ) : eventAttendanceLogs.length === 0 ? (
+                    <div className="p-8 text-center text-gray-500 bg-gray-50 rounded-lg">
+                      <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No attendance records found for this event</p>
+                    </div>
+                  ) : (
+                    <ScrollArea className="h-64 border rounded-lg">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 sticky top-0">
+                          <tr>
+                            <th className="text-left p-2 font-medium">Person</th>
+                            <th className="text-left p-2 font-medium">Camera</th>
+                            <th className="text-left p-2 font-medium">Time</th>
+                            <th className="text-left p-2 font-medium">Confidence</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {eventAttendanceLogs.map((log, idx) => (
+                            <tr key={log.id || idx} className="hover:bg-gray-50">
+                              <td className="p-2">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 shrink-0">
+                                    {log.capture_image_url ? (
+                                      <img src={log.capture_image_url} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center bg-blue-100">
+                                        <Users className="w-4 h-4 text-blue-400" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <span className="font-medium">{log.user_name}</span>
+                                </div>
+                              </td>
+                              <td className="p-2 text-gray-600">{log.camera_name}</td>
+                              <td className="p-2 text-gray-600">
+                                {new Date(log.timestamp).toLocaleTimeString()}
+                              </td>
+                              <td className="p-2">
+                                {log.confidence_score && (
+                                  <Badge variant="outline" className="text-[10px]">
+                                    {Math.round(log.confidence_score > 1 ? log.confidence_score : log.confidence_score * 100)}%
+                                  </Badge>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </ScrollArea>
+                  )}
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setViewingEvent(null)}>
+                  Close
+                </Button>
+                <Button onClick={() => exportAttendanceCSV(viewingEvent, eventAttendanceLogs)} disabled={eventAttendanceLogs.length === 0}>
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  Export Attendance
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 

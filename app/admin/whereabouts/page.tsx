@@ -28,7 +28,7 @@ export default function StudentWhereabouts() {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'student_whereabouts' },
-        (payload) => {
+        (payload: any) => {
           setWhereabouts(prev => [payload.new, ...prev])
           console.log('📍 New whereabouts record:', payload.new.user_id)
         }
@@ -36,20 +36,20 @@ export default function StudentWhereabouts() {
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'student_whereabouts' },
-        (payload) => {
-          setWhereabouts(prev => prev.map(w => w.user_id === payload.new.user_id ? payload.new : w))
+        (payload: any) => {
+          setWhereabouts(prev => prev.map((w: any) => w.user_id === payload.new.user_id ? payload.new : w))
           console.log('✏️ Whereabouts updated:', payload.new.user_id)
         }
       )
       .on(
         'postgres_changes',
         { event: 'DELETE', schema: 'public', table: 'student_whereabouts' },
-        (payload) => {
-          setWhereabouts(prev => prev.filter(w => w.user_id !== payload.old.user_id))
+        (payload: any) => {
+          setWhereabouts(prev => prev.filter((w: any) => w.user_id !== payload.old.user_id))
           console.log('🗑️ Whereabouts deleted:', payload.old.user_id)
         }
       )
-      .subscribe((status, err) => {
+      .subscribe((status: string, err?: Error) => {
         console.log('📡 Student whereabouts realtime:', status)
         if (err) console.error('Subscription error:', err)
       })
