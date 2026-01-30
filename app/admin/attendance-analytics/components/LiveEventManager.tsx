@@ -1179,165 +1179,243 @@ export function LiveEventManager({ students, cameras, initialLogs = [], onAttend
             </div>
           </div>
 
-          {/* Realtime Grid */}
+          {/* Realtime Grid - Shows actual captured face photos */}
           {viewMode === 'grid' && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
-              {realtimeStudents.map((rs) => (
-                <div
-                  key={rs.student.user_id}
-                  className={`
-                    relative rounded-xl overflow-hidden transition-all duration-500 transform
-                    ${rs.status === 'present' 
-                      ? 'bg-gradient-to-br from-green-50 to-emerald-100 border-2 border-green-400 shadow-lg shadow-green-200' 
-                      : 'bg-gray-50 border border-gray-200'
-                    }
-                    ${rs.animationState === 'just-arrived' 
-                      ? 'scale-105 ring-4 ring-green-400 ring-opacity-50 animate-pulse' 
-                      : ''
-                    }
-                  `}
-                >
-                  {/* Status indicator */}
-                  <div className={`
-                    absolute top-2 right-2 w-3 h-3 rounded-full z-10
-                    ${rs.status === 'present' ? 'bg-green-500' : 'bg-gray-300'}
-                    ${rs.animationState === 'just-arrived' ? 'animate-ping' : ''}
-                  `} />
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {realtimeStudents.map((rs, idx) => {
+                const detectionCount = getDetectionCount(rs.student.user_id)
+                const confidencePercent = rs.confidence ? Math.round(rs.confidence > 1 ? rs.confidence : rs.confidence * 100) : null
+                
+                return (
+                  <div
+                    key={rs.student.user_id}
+                    className={`
+                      relative rounded-xl overflow-hidden transition-all duration-500 transform
+                      ${rs.status === 'present' 
+                        ? 'bg-gradient-to-br from-green-50 to-emerald-100 border-2 border-green-400 shadow-lg shadow-green-200' 
+                        : 'bg-gray-50 border border-gray-200'
+                      }
+                      ${rs.animationState === 'just-arrived' 
+                        ? 'scale-105 ring-4 ring-green-400 ring-opacity-50 animate-pulse' 
+                        : ''
+                      }
+                    `}
+                  >
+                    {/* Row number badge */}
+                    <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-black/50 text-white flex items-center justify-center text-xs font-bold z-10">
+                      {idx + 1}
+                    </div>
 
-                  {/* Image */}
-                  <div className="aspect-square relative">
-                    {rs.captureImage ? (
-                      <img 
-                        src={rs.captureImage} 
-                        alt={rs.student.full_name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : rs.student.profile_image_url ? (
-                      <img 
-                        src={rs.student.profile_image_url} 
-                        alt={rs.student.full_name}
-                        className={`w-full h-full object-cover ${rs.status === 'pending' ? 'opacity-40 grayscale' : ''}`}
-                      />
-                    ) : (
-                      <div className={`w-full h-full flex items-center justify-center ${
-                        rs.status === 'present' ? 'bg-green-200' : 'bg-gray-200'
-                      }`}>
-                        <Users className={`w-8 h-8 ${rs.status === 'present' ? 'text-green-600' : 'text-gray-400'}`} />
+                    {/* Status indicator */}
+                    <div className={`
+                      absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-semibold z-10
+                      ${rs.status === 'present' ? 'bg-green-500 text-white' : 'bg-gray-400 text-white'}
+                    `}>
+                      {rs.status === 'present' ? 'Present' : 'Waiting'}
+                    </div>
+
+                    {/* Detection count badge */}
+                    {detectionCount > 1 && (
+                      <div className="absolute top-2 left-10 px-1.5 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold z-10">
+                        {detectionCount}x
                       </div>
                     )}
 
-                    {/* Just arrived overlay */}
-                    {rs.animationState === 'just-arrived' && (
-                      <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center">
-                        <CheckCircle2 className="w-12 h-12 text-green-600 animate-bounce" />
-                      </div>
-                    )}
-                  </div>
+                    {/* Face Capture Image - Priority: captured > profile > placeholder */}
+                    <div className="aspect-square relative bg-gray-100">
+                      {rs.captureImage ? (
+                        <img 
+                          src={rs.captureImage} 
+                          alt={rs.student.full_name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : rs.student.profile_image_url ? (
+                        <img 
+                          src={rs.student.profile_image_url} 
+                          alt={rs.student.full_name}
+                          className={`w-full h-full object-cover ${rs.status === 'pending' ? 'opacity-40 grayscale' : ''}`}
+                        />
+                      ) : (
+                        <div className={`w-full h-full flex items-center justify-center ${
+                          rs.status === 'present' ? 'bg-green-200' : 'bg-gray-200'
+                        }`}>
+                          <Users className={`w-12 h-12 ${rs.status === 'present' ? 'text-green-600' : 'text-gray-400'}`} />
+                        </div>
+                      )}
 
-                  {/* Info */}
-                  <div className="p-2">
-                    <p className="text-xs font-medium truncate">{rs.student.full_name}</p>
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-[10px] text-gray-500">{rs.student.form}</span>
-                      {rs.lastSeen && (
-                        <span className="text-[9px] text-green-600">
-                          {new Date(rs.lastSeen).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                      {/* Just arrived overlay */}
+                      {rs.animationState === 'just-arrived' && (
+                        <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center">
+                          <CheckCircle2 className="w-12 h-12 text-green-600 animate-bounce" />
+                        </div>
+                      )}
+
+                      {/* Confidence bar overlay at bottom */}
+                      {confidencePercent && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-1">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-1.5 bg-gray-600 rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full transition-all duration-300 ${
+                                  confidencePercent > 80 ? 'bg-green-500' : confidencePercent > 60 ? 'bg-yellow-500' : 'bg-red-500'
+                                }`}
+                                style={{ width: `${confidencePercent}%` }}
+                              />
+                            </div>
+                            <span className="text-[10px] text-white font-medium">{confidencePercent}%</span>
+                          </div>
+                        </div>
                       )}
                     </div>
-                    {rs.confidence && (
-                      <div className="mt-1">
-                        <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-green-500 transition-all duration-300"
-                            style={{ width: `${rs.confidence * 100}%` }}
-                          />
-                        </div>
+
+                    {/* Info */}
+                    <div className="p-2 space-y-1">
+                      <p className="text-sm font-semibold truncate">{rs.student.full_name}</p>
+                      <div className="flex items-center justify-between">
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                          {rs.student.form}
+                        </Badge>
+                        {rs.lastSeen && (
+                          <span className="text-[10px] text-green-600 font-medium">
+                            {new Date(rs.lastSeen).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                          </span>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
 
-          {/* Realtime Table */}
+          {/* Realtime Table - Detailed attendance log style */}
           {viewMode === 'table' && (
             <Card>
+              <CardHeader className="py-3 border-b">
+                <CardTitle className="text-sm flex items-center justify-between">
+                  <span>Student Attendance Logs</span>
+                  <Badge variant="secondary">{realtimeStudents.length} records</Badge>
+                </CardTitle>
+              </CardHeader>
               <CardContent className="p-0">
                 <div className="max-h-[500px] overflow-auto">
                   <table className="w-full">
-                    <thead className="bg-gray-50 sticky top-0">
+                    <thead className="bg-gray-50 sticky top-0 z-10">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Student</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Form</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Status</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Time</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Confidence</th>
+                        <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600 w-10">#</th>
+                        <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600">Date & Time</th>
+                        <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600">Student</th>
+                        <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600">Event</th>
+                        <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600">Camera</th>
+                        <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600">Confidence</th>
+                        <th className="px-3 py-3 text-left text-xs font-semibold text-gray-600">Status</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                      {realtimeStudents.map((rs) => (
-                        <tr 
-                          key={rs.student.user_id}
-                          className={`
-                            transition-all duration-500
-                            ${rs.animationState === 'just-arrived' ? 'bg-green-100 animate-pulse' : ''}
-                            ${rs.status === 'present' ? 'bg-green-50/50' : ''}
-                          `}
-                        >
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200">
-                                {rs.captureImage || rs.student.profile_image_url ? (
-                                  <img 
-                                    src={rs.captureImage || rs.student.profile_image_url} 
-                                    alt=""
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center">
-                                    <Users className="w-4 h-4 text-gray-400" />
-                                  </div>
-                                )}
+                      {realtimeStudents.map((rs, idx) => {
+                        const detectionCount = getDetectionCount(rs.student.user_id)
+                        const confidencePercent = rs.confidence ? Math.round(rs.confidence > 1 ? rs.confidence : rs.confidence * 100) : null
+                        const log = sessionLogs.find(l => l.user_id === rs.student.user_id)
+                        
+                        return (
+                          <tr 
+                            key={rs.student.user_id}
+                            className={`
+                              transition-all duration-500 hover:bg-gray-50
+                              ${rs.animationState === 'just-arrived' ? 'bg-green-100 animate-pulse' : ''}
+                              ${rs.status === 'present' ? 'bg-green-50/30' : ''}
+                            `}
+                          >
+                            {/* Row number */}
+                            <td className="px-3 py-3 text-center">
+                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-xs font-semibold text-gray-600">
+                                {idx + 1}
+                              </span>
+                            </td>
+                            
+                            {/* Date & Time */}
+                            <td className="px-3 py-3">
+                              <div className="text-xs">
+                                <p className="font-medium text-gray-900">
+                                  {rs.lastSeen ? new Date(rs.lastSeen).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '-'}
+                                </p>
+                                <p className="text-gray-500">
+                                  {rs.lastSeen ? new Date(rs.lastSeen).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '-'}
+                                </p>
                               </div>
-                              <div>
-                                <p className="text-sm font-medium">{rs.student.full_name}</p>
-                                <p className="text-xs text-gray-500">{rs.student.admission_number}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-sm">{rs.student.form} {rs.student.class_name}</td>
-                          <td className="px-4 py-3">
-                            <Badge className={
-                              rs.status === 'present' 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-gray-100 text-gray-600'
-                            }>
-                              {rs.status === 'present' ? 'Present' : 'Waiting...'}
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            {rs.lastSeen 
-                              ? new Date(rs.lastSeen).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-                              : '-'
-                            }
-                          </td>
-                          <td className="px-4 py-3">
-                            {rs.confidence ? (
-                              <div className="flex items-center gap-2">
-                                <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                  <div 
-                                    className="h-full bg-green-500"
-                                    style={{ width: `${rs.confidence * 100}%` }}
-                                  />
+                            </td>
+                            
+                            {/* Student with photo */}
+                            <td className="px-3 py-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-200 border-2 border-white shadow-sm shrink-0">
+                                  {rs.captureImage ? (
+                                    <img src={rs.captureImage} alt="" className="w-full h-full object-cover" />
+                                  ) : rs.student.profile_image_url ? (
+                                    <img src={rs.student.profile_image_url} alt="" className={`w-full h-full object-cover ${rs.status === 'pending' ? 'opacity-40 grayscale' : ''}`} />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                                      <Users className="w-6 h-6 text-gray-400" />
+                                    </div>
+                                  )}
                                 </div>
-                                <span className="text-xs text-gray-600">{Math.round(rs.confidence * 100)}%</span>
+                                <div>
+                                  <p className="text-sm font-semibold text-gray-900">{rs.student.full_name}</p>
+                                  <p className="text-xs text-gray-500">{rs.student.form}</p>
+                                  {detectionCount > 1 && (
+                                    <Badge variant="secondary" className="text-[9px] px-1 py-0 mt-0.5 bg-blue-50 text-blue-600">
+                                      {detectionCount}x detected
+                                    </Badge>
+                                  )}
+                                </div>
                               </div>
-                            ) : '-'}
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                            
+                            {/* Event type */}
+                            <td className="px-3 py-3">
+                              <Badge variant="outline" className="text-[10px]">
+                                {liveSession?.name || 'class'}
+                              </Badge>
+                            </td>
+                            
+                            {/* Camera */}
+                            <td className="px-3 py-3">
+                              <div className="text-xs">
+                                <p className="font-medium text-gray-700">{log?.camera_name || '-'}</p>
+                                <p className="text-gray-400">{rs.student.form}</p>
+                              </div>
+                            </td>
+                            
+                            {/* Confidence */}
+                            <td className="px-3 py-3">
+                              {confidencePercent ? (
+                                <div className="flex items-center gap-2">
+                                  <div className="w-14 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div 
+                                      className={`h-full ${confidencePercent > 80 ? 'bg-green-500' : confidencePercent > 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                                      style={{ width: `${confidencePercent}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-xs font-medium text-gray-700">{confidencePercent}%</span>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-gray-400">-</span>
+                              )}
+                            </td>
+                            
+                            {/* Status */}
+                            <td className="px-3 py-3">
+                              <Badge className={`text-[10px] ${
+                                rs.status === 'present' 
+                                  ? 'bg-green-100 text-green-700 border-green-200' 
+                                  : 'bg-gray-100 text-gray-600 border-gray-200'
+                              }`}>
+                                {rs.status === 'present' ? 'On Time' : 'Waiting...'}
+                              </Badge>
+                            </td>
+                          </tr>
+                        )
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -1379,7 +1457,7 @@ export function LiveEventManager({ students, cameras, initialLogs = [], onAttend
         </CardHeader>
         <CardContent className="p-0">
           <ScrollArea className="h-64" ref={activityScrollRef}>
-            {sessionLogs.length === 0 ? (
+            {deduplicatedLogs.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
                 <Radio className="w-8 h-8 mx-auto mb-2 animate-pulse text-blue-400" />
                 <p className="text-sm">Waiting for attendance detections...</p>
@@ -1387,32 +1465,54 @@ export function LiveEventManager({ students, cameras, initialLogs = [], onAttend
               </div>
             ) : (
               <div className="divide-y">
-                {sessionLogs.slice(0, 50).map((log, idx) => {
+                {deduplicatedLogs.slice(0, 50).map(({ log, count }, idx) => {
                   const student = students.find(s => s.user_id === log.user_id)
                   const confidenceValue = log.confidence_score 
                     ? Math.round(log.confidence_score > 1 ? log.confidence_score : log.confidence_score * 100)
                     : null
+                  const rowNumber = idx + 1
                   
                   return (
                     <div 
-                      key={log.id || idx}
+                      key={log.user_id}
                       className={`px-4 py-3 flex items-center gap-3 transition-all ${
                         idx === 0 ? 'bg-green-50 animate-pulse' : 'hover:bg-gray-50'
                       }`}
                     >
-                      <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 shrink-0 border-2 border-white shadow">
-                        {log.capture_image_url ? (
-                          <img src={log.capture_image_url} alt="" className="w-full h-full object-cover" />
-                        ) : student?.profile_image_url ? (
-                          <img src={student.profile_image_url} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-blue-100">
-                            <Users className="w-5 h-5 text-blue-400" />
+                      {/* Row number */}
+                      <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 shrink-0">
+                        {rowNumber}
+                      </div>
+                      
+                      {/* Avatar with count badge */}
+                      <div className="relative shrink-0">
+                        <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 border-2 border-white shadow">
+                          {log.capture_image_url ? (
+                            <img src={log.capture_image_url} alt="" className="w-full h-full object-cover" />
+                          ) : student?.profile_image_url ? (
+                            <img src={student.profile_image_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-blue-100">
+                              <Users className="w-5 h-5 text-blue-400" />
+                            </div>
+                          )}
+                        </div>
+                        {count > 1 && (
+                          <div className="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-blue-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold shadow-md">
+                            {count}x
                           </div>
                         )}
                       </div>
+                      
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{log.user_name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium truncate">{log.user_name}</p>
+                          {count > 1 && (
+                            <Badge variant="secondary" className="text-[9px] px-1.5 py-0 bg-blue-50 text-blue-600 shrink-0">
+                              {count} detections
+                            </Badge>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2 text-xs text-gray-500">
                           <span>{student?.form || '-'}</span>
                           <span>•</span>

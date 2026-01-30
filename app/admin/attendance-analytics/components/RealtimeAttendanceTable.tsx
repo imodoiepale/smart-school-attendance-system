@@ -329,42 +329,39 @@ export function RealtimeAttendanceTable({
           <table className="w-full">
             <thead className="bg-gray-50 sticky top-0 z-10">
               <tr>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">
-                  Student
+                <th className="px-2 py-3 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider w-10">
+                  #
                 </th>
                 <th 
-                  className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                  onClick={() => toggleSort('form')}
-                >
-                  <div className="flex items-center gap-1">
-                    Form
-                    {sortBy === 'form' && (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
-                  </div>
-                </th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">
-                  Status
-                </th>
-                <th 
-                  className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  className="px-3 py-3 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => toggleSort('time')}
                 >
                   <div className="flex items-center gap-1">
-                    Time
+                    Date & Time
                     {sortBy === 'time' && (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
                   </div>
                 </th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">
+                  Student
+                </th>
+                <th className="px-3 py-3 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">
+                  Event
+                </th>
+                <th className="px-3 py-3 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">
                   Camera
                 </th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">
                   Confidence
+                </th>
+                <th className="px-3 py-3 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider">
+                  Status
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center">
+                  <td colSpan={7} className="px-4 py-12 text-center">
                     <div className="text-gray-400">
                       <Users className="w-10 h-10 mx-auto mb-2 opacity-50" />
                       <p className="text-sm">No attendance logs found</p>
@@ -373,10 +370,13 @@ export function RealtimeAttendanceTable({
                   </td>
                 </tr>
               ) : (
-                filteredLogs.slice(0, 200).map((log) => {
+                filteredLogs.slice(0, 200).map((log, idx) => {
                   const student = students.find(s => s.user_id === log.user_id)
                   const isRecent = recentIds.has(log.id)
                   const statusBadge = getStatusBadge(log.attendance_status)
+                  const confidenceValue = log.confidence_score 
+                    ? Math.round(log.confidence_score > 1 ? log.confidence_score : log.confidence_score * 100)
+                    : null
                   
                   return (
                     <tr 
@@ -386,10 +386,29 @@ export function RealtimeAttendanceTable({
                         ${isRecent ? 'bg-green-50 animate-pulse' : ''}
                       `}
                     >
-                      <td className="px-3 py-2">
-                        <div className="flex items-center gap-2">
-                          {/* Avatar with capture image */}
-                          <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-100 shrink-0">
+                      {/* Row number */}
+                      <td className="px-2 py-3 text-center">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-xs font-semibold text-gray-600">
+                          {idx + 1}
+                        </span>
+                      </td>
+                      
+                      {/* Date & Time */}
+                      <td className="px-3 py-3">
+                        <div className="text-xs">
+                          <p className="font-medium text-gray-900">
+                            {new Date(log.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </p>
+                          <p className="text-gray-500">
+                            {formatTime(log.timestamp)}
+                          </p>
+                        </div>
+                      </td>
+                      
+                      {/* Student with large photo */}
+                      <td className="px-3 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0 border-2 border-white shadow-sm">
                             {log.capture_image_url ? (
                               <img 
                                 src={log.capture_image_url} 
@@ -403,72 +422,73 @@ export function RealtimeAttendanceTable({
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <Users className="w-4 h-4 text-gray-400" />
+                              <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                                <Users className="w-6 h-6 text-gray-400" />
                               </div>
                             )}
                             {isRecent && (
                               <div className="absolute inset-0 bg-green-400/30 flex items-center justify-center">
-                                <Sparkles className="w-3 h-3 text-green-600 animate-bounce" />
+                                <Sparkles className="w-4 h-4 text-green-600 animate-bounce" />
                               </div>
                             )}
                           </div>
                           
                           <div className="min-w-0">
-                            <p className="text-xs font-medium truncate">{log.user_name}</p>
-                            <p className="text-[10px] text-gray-500">{student?.admission_number || log.user_id.slice(0, 8)}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-semibold truncate">{log.user_name}</p>
+                              {isRecent && (
+                                <Badge className="bg-yellow-400 text-yellow-900 text-[8px] px-1 py-0 animate-bounce">
+                                  NEW
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-500">{student?.form || '-'}</p>
                           </div>
-                          
-                          {isRecent && (
-                            <Badge className="bg-yellow-400 text-yellow-900 text-[8px] px-1 py-0 animate-bounce ml-1">
-                              NEW
-                            </Badge>
-                          )}
                         </div>
                       </td>
-                      <td className="px-3 py-2 text-xs">
-                        {student?.form || '-'} {student?.class_name || ''}
-                      </td>
-                      <td className="px-3 py-2">
-                        <Badge variant="outline" className={`text-[10px] ${statusBadge.className}`}>
-                          {statusBadge.label}
+                      
+                      {/* Event type */}
+                      <td className="px-3 py-3">
+                        <Badge variant="outline" className="text-[10px]">
+                          {log.event_type || 'class'}
                         </Badge>
                       </td>
-                      <td className="px-3 py-2">
+                      
+                      {/* Camera */}
+                      <td className="px-3 py-3">
                         <div className="text-xs">
-                          <span className="font-medium text-gray-900">
-                            {formatTime(log.timestamp)}
-                          </span>
-                          <p className="text-[10px] text-gray-400">
-                            {new Date(log.timestamp).toLocaleDateString()}
-                          </p>
+                          <p className="font-medium text-gray-700">{log.camera_name}</p>
+                          <p className="text-gray-400 text-[10px]">{log.camera_group || '-'}</p>
                         </div>
                       </td>
-                      <td className="px-3 py-2">
-                        <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                          <Camera className="w-3 h-3 text-gray-400" />
-                          <span className="truncate max-w-[100px]">{log.camera_name}</span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-2">
-                        {log.confidence_score ? (
-                          <div className="flex items-center gap-1.5">
-                            <div className="w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                      
+                      {/* Confidence */}
+                      <td className="px-3 py-3">
+                        {confidenceValue ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-14 h-2 bg-gray-200 rounded-full overflow-hidden">
                               <div 
                                 className={`h-full rounded-full transition-all ${
-                                  (log.confidence_score > 1 ? log.confidence_score : log.confidence_score * 100) > 80 ? 'bg-green-500' :
-                                  (log.confidence_score > 1 ? log.confidence_score : log.confidence_score * 100) > 60 ? 'bg-yellow-500' : 'bg-red-500'
+                                  confidenceValue > 80 ? 'bg-green-500' :
+                                  confidenceValue > 60 ? 'bg-yellow-500' : 'bg-red-500'
                                 }`}
-                                style={{ width: `${Math.min(log.confidence_score > 1 ? log.confidence_score : log.confidence_score * 100, 100)}%` }}
+                                style={{ width: `${Math.min(confidenceValue, 100)}%` }}
                               />
                             </div>
-                            <span className="text-[10px] text-gray-500">
-                              {Math.round(log.confidence_score > 1 ? log.confidence_score : log.confidence_score * 100)}%
+                            <span className="text-xs font-medium text-gray-700">
+                              {confidenceValue.toFixed(1)}%
                             </span>
                           </div>
                         ) : (
-                          <span className="text-[10px] text-gray-400">-</span>
+                          <span className="text-xs text-gray-400">-</span>
                         )}
+                      </td>
+                      
+                      {/* Status */}
+                      <td className="px-3 py-3">
+                        <Badge variant="outline" className={`text-[10px] ${statusBadge.className}`}>
+                          {statusBadge.label}
+                        </Badge>
                       </td>
                     </tr>
                   )
