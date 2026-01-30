@@ -948,7 +948,15 @@ export function LiveEventManager({ students, cameras, initialLogs = [], onAttend
       </Dialog>
 
       {/* Event Details Dialog */}
-      <Dialog open={!!viewingEvent} onOpenChange={(open) => !open && setViewingEvent(null)}>
+      <Dialog 
+        open={!!viewingEvent} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setViewingEvent(null)
+            setEventAttendanceLogs([])
+          }
+        }}
+      >
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           {viewingEvent && (
             <>
@@ -1091,7 +1099,7 @@ export function LiveEventManager({ students, cameras, initialLogs = [], onAttend
               </div>
 
               <DialogFooter>
-                <Button variant="outline" onClick={() => setViewingEvent(null)}>
+                <Button variant="outline" onClick={() => { setViewingEvent(null); setEventAttendanceLogs([]); }}>
                   Close
                 </Button>
                 <Button onClick={() => exportAttendanceCSV(viewingEvent, eventAttendanceLogs)} disabled={eventAttendanceLogs.length === 0}>
