@@ -12,9 +12,8 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { 
-  Play, Square, Camera, Users, Clock, CheckCircle2, XCircle, 
-  AlertCircle, Zap, RefreshCw, Pause, Radio, Timer, UserCheck, UserX,
-  CalendarDays, ChevronRight, History, Trash2, Eye
+  Play, Square, Clock, Users, Camera, Pause, Plus, CalendarDays, Trash2, Eye, RefreshCw, CheckCircle2, XCircle, AlertCircle, Maximize2, Minimize2, Zap, Radio, Timer, UserCheck, UserX,
+  ChevronRight, History
 } from "lucide-react"
 import { Student, Camera as CameraType, AttendanceLog, FORM_STRUCTURE, Event } from "../types"
 
@@ -64,6 +63,7 @@ export function LiveEventManager({ students, cameras, initialLogs = [], onAttend
   const [isConnected, setIsConnected] = useState(false)
   const [elapsedTime, setElapsedTime] = useState(0)
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid')
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const channelRef = useRef<any>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const activityScrollRef = useRef<HTMLDivElement>(null)

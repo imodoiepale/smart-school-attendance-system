@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Plus, Upload, Trash2, Edit, Search, Download, UserPlus } from "lucide-react"
+import { Plus, Upload, Trash2, Edit, Search, Download, UserPlus, AlertCircle, X } from "lucide-react"
+import Link from "next/link"
 import { AddStudentModal } from "@/components/students/add-student-modal"
 import { ModernHeader } from "@/components/modern-header"
 
@@ -18,10 +19,13 @@ export default function StudentManagement() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [addModalOpen, setAddModalOpen] = useState(false)
+  const [unregisteredCount, setUnregisteredCount] = useState(0)
+  const [showUnregisteredBanner, setShowUnregisteredBanner] = useState(true)
 
   useEffect(() => {
     checkUser()
     fetchStudents()
+    fetchUnregisteredCount()
   }, [])
 
   const checkUser = async () => {
@@ -42,6 +46,18 @@ export default function StudentManagement() {
       .order("full_name", { ascending: true })
     setStudents(data || [])
     setLoading(false)
+  }
+
+  const fetchUnregisteredCount = async () => {
+    try {
+      const response = await fetch("/api/students/unregistered")
+      if (response.ok) {
+        const data = await response.json()
+        setUnregisteredCount(data.count || 0)
+      }
+    } catch (error) {
+      console.error("Error fetching unregistered count:", error)
+    }
   }
 
   const handleDelete = async (user_id: string) => {
@@ -135,6 +151,45 @@ export default function StudentManagement() {
       </div>
 
       <main className="max-w-[1600px] mx-auto p-6 space-y-6">
+
+        {/* Unregistered People Banner */}
+        {showUnregisteredBanner && unregisteredCount > 0 && (
+          <Card className="border-orange-300 bg-gradient-to-r from-orange-50 to-amber-50">
+            <CardContent className="py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-orange-100 rounded-full">
+                    <AlertCircle className="w-6 h-6 text-orange-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-orange-900">
+                      {unregisteredCount} unregistered {unregisteredCount === 1 ? 'person' : 'people'} detected by cameras
+                    </p>
+                    <p className="text-sm text-orange-700">
+                      These people have been detected but are not in the system. Add them to track their attendance.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Link href="/admin/students/unregistered">
+                    <Button className="bg-orange-600 hover:bg-orange-700">
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Register Now
+                    </Button>
+                  </Link>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => setShowUnregisteredBanner(false)}
+                    className="text-orange-600 hover:text-orange-800 hover:bg-orange-100"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Search Bar */}
         <Card>

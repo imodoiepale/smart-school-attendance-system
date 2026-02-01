@@ -38,6 +38,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: registryError.message }, { status: 500 })
     }
 
+    // user_registry is the primary table - no separate students table
     const registeredIds = new Set(registeredUsers?.map(u => u.user_id) || [])
 
     // Filter to get unregistered people
