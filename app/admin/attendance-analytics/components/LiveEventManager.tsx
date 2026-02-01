@@ -1700,14 +1700,14 @@ export function LiveEventManager({ students, cameras, initialLogs = [], onAttend
               <div className="relative overflow-hidden rounded-2xl p-4 text-center bg-gradient-to-br from-emerald-500/10 to-green-600/20 backdrop-blur-xl border border-green-200/50 shadow-xl shadow-green-500/10">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent" />
                 <div className="relative">
-                  <div className="text-4xl font-black text-emerald-600 drop-shadow-sm">{realtimeStudents.filter(s => s.status === 'present').length}</div>
+                  <div className="text-4xl font-black text-emerald-600 drop-shadow-sm">{presentCount}</div>
                   <div className="text-sm text-emerald-600/80 font-semibold mt-1">Present</div>
                 </div>
               </div>
               <div className="relative overflow-hidden rounded-2xl p-4 text-center bg-gradient-to-br from-orange-500/10 to-amber-600/20 backdrop-blur-xl border border-orange-200/50 shadow-xl shadow-orange-500/10">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent" />
                 <div className="relative">
-                  <div className="text-4xl font-black text-orange-600 drop-shadow-sm">{realtimeStudents.filter(s => s.status === 'pending').length}</div>
+                  <div className="text-4xl font-black text-orange-600 drop-shadow-sm">{absentCount}</div>
                   <div className="text-sm text-orange-600/80 font-semibold mt-1">Waiting</div>
                 </div>
               </div>
@@ -1715,7 +1715,7 @@ export function LiveEventManager({ students, cameras, initialLogs = [], onAttend
                 <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent" />
                 <div className="relative">
                   <div className="text-4xl font-black text-violet-600 drop-shadow-sm">
-                    {realtimeStudents.length > 0 ? Math.round((realtimeStudents.filter(s => s.status === 'present').length / realtimeStudents.length) * 100) : 0}%
+                    {attendancePercentage}%
                   </div>
                   <div className="text-sm text-violet-600/80 font-semibold mt-1">Attendance</div>
                 </div>
