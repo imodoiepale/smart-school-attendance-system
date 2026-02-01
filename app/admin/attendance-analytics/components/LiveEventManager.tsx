@@ -64,6 +64,7 @@ export function LiveEventManager({ students, cameras, initialLogs = [], onAttend
   const [elapsedTime, setElapsedTime] = useState(0)
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid')
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [excludedStudents, setExcludedStudents] = useState<Set<string>>(new Set())
   const channelRef = useRef<any>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const activityScrollRef = useRef<HTMLDivElement>(null)
@@ -488,6 +489,19 @@ export function LiveEventManager({ students, cameras, initialLogs = [], onAttend
     )
   }
 
+  // Toggle exclude student
+  const toggleExcludeStudent = (userId: string) => {
+    setExcludedStudents(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(userId)) {
+        newSet.delete(userId)
+      } else {
+        newSet.add(userId)
+      }
+      return newSet
+    })
+  }
+
   // Format elapsed time
   const formatElapsed = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -495,10 +509,11 @@ export function LiveEventManager({ students, cameras, initialLogs = [], onAttend
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
-  // Stats
-  const presentCount = realtimeStudents.filter(s => s.status === 'present').length
-  const absentCount = realtimeStudents.filter(s => s.status === 'pending').length
-  const totalExpected = realtimeStudents.length
+  // Stats - exclude excluded students from counts
+  const activeStudents = realtimeStudents.filter(s => !excludedStudents.has(s.student.user_id))
+  const presentCount = activeStudents.filter(s => s.status === 'present').length
+  const absentCount = activeStudents.filter(s => s.status === 'pending').length
+  const totalExpected = activeStudents.length
   const attendancePercentage = totalExpected > 0 ? Math.round((presentCount / totalExpected) * 100) : 0
 
   // Deduplicate session logs - group by user_id and count detections
@@ -530,6 +545,7 @@ export function LiveEventManager({ students, cameras, initialLogs = [], onAttend
   }
 
   return (
+    <>
     <div className="flex gap-4">
       {/* Events Sidebar */}
       {showEventsSidebar && (
@@ -825,10 +841,75 @@ export function LiveEventManager({ students, cameras, initialLogs = [], onAttend
               )}
             </div>
 
+            {/* Exclude Students */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-2">
+                  <XCircle className="w-4 h-4 text-red-500" />
+                  Exclude Students ({excludedStudents.size} excluded)
+                </Label>
+                {excludedStudents.size > 0 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setExcludedStudents(new Set())}
+                    className="text-red-600 hover:text-red-800"
+                  >
+                    Clear All
+                  </Button>
+                )}
+              </div>
+              <ScrollArea className="h-40 border rounded-lg p-2">
+                <div className="grid grid-cols-2 gap-1">
+                  {filteredStudents.map((student) => (
+                    <div 
+                      key={student.user_id} 
+                      className={`flex items-center space-x-2 p-1.5 rounded-lg cursor-pointer transition-colors ${
+                        excludedStudents.has(student.user_id) 
+                          ? 'bg-red-50 border border-red-200' 
+                          : 'hover:bg-gray-50'
+                      }`}
+                      onClick={() => toggleExcludeStudent(student.user_id)}
+                    >
+                      <Checkbox
+                        id={`exclude-${student.user_id}`}
+                        checked={excludedStudents.has(student.user_id)}
+                        onCheckedChange={() => toggleExcludeStudent(student.user_id)}
+                      />
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        {student.profile_image_url ? (
+                          <img src={student.profile_image_url} alt="" className="w-6 h-6 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center">
+                            <Users className="w-3 h-3 text-gray-400" />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className={`text-xs font-medium truncate ${excludedStudents.has(student.user_id) ? 'text-red-600 line-through' : ''}`}>
+                            {student.full_name}
+                          </p>
+                          <p className="text-[10px] text-gray-500">{student.form}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+              {excludedStudents.size > 0 && (
+                <p className="text-xs text-red-600">
+                  ⚠️ {excludedStudents.size} student(s) will be excluded from this event
+                </p>
+              )}
+            </div>
+
             {/* Summary */}
             <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
               <p className="text-sm font-medium text-blue-900">
-                Expected Participants: <span className="font-bold">{filteredStudents.length}</span> students
+                Expected Participants: <span className="font-bold">{filteredStudents.length - excludedStudents.size}</span> students
+                {excludedStudents.size > 0 && (
+                  <span className="text-red-600 ml-2">({excludedStudents.size} excluded)</span>
+                )}
               </p>
               {selectedForms.length > 0 && (
                 <p className="text-xs text-blue-700 mt-1">
@@ -1184,12 +1265,21 @@ export function LiveEventManager({ students, cameras, initialLogs = [], onAttend
               >
                 Table
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsFullscreen(true)}
+                className="ml-2"
+              >
+                <Maximize2 className="w-4 h-4 mr-1" />
+                Fullscreen
+              </Button>
             </div>
           </div>
 
           {/* Realtime Grid - Shows actual captured face photos */}
           {viewMode === 'grid' && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2">
               {realtimeStudents.map((rs, idx) => {
                 const detectionCount = getDetectionCount(rs.student.user_id)
                 const confidencePercent = rs.confidence ? Math.round(rs.confidence > 1 ? rs.confidence : rs.confidence * 100) : null
@@ -1276,16 +1366,14 @@ export function LiveEventManager({ students, cameras, initialLogs = [], onAttend
                       )}
                     </div>
 
-                    {/* Info */}
-                    <div className="p-2 space-y-1">
-                      <p className="text-sm font-semibold truncate">{rs.student.full_name}</p>
+                    {/* Info - Compact */}
+                    <div className="p-1.5 space-y-0.5">
+                      <p className="text-[11px] font-semibold truncate">{rs.student.full_name}</p>
                       <div className="flex items-center justify-between">
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                          {rs.student.form}
-                        </Badge>
+                        <span className="text-[9px] text-gray-500">{rs.student.form}</span>
                         {rs.lastSeen && (
-                          <span className="text-[10px] text-green-600 font-medium">
-                            {new Date(rs.lastSeen).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                          <span className="text-[9px] text-green-600 font-medium">
+                            {new Date(rs.lastSeen).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         )}
                       </div>
@@ -1556,5 +1644,246 @@ export function LiveEventManager({ students, cameras, initialLogs = [], onAttend
       </Card>
       </div>
     </div>
+
+      {/* Fullscreen Overlay - Glassmorphism Theme */}
+    {isFullscreen && liveSession && (
+      <div className="fixed inset-0 z-50 overflow-auto bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100">
+        {/* Animated background orbs */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/30 to-cyan-400/30 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute top-1/2 -left-40 w-96 h-96 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl" />
+          <div className="absolute -bottom-40 right-1/3 w-80 h-80 bg-gradient-to-br from-green-400/20 to-emerald-400/20 rounded-full blur-3xl" />
+        </div>
+
+        {/* Fullscreen Header - Glassmorphism */}
+        <div className="sticky top-0 z-20 backdrop-blur-xl bg-white/70 border-b border-white/50 shadow-lg shadow-black/5">
+          <div className="max-w-[1920px] mx-auto p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 px-4 py-2 rounded-2xl bg-white/50 backdrop-blur-sm border border-white/60 shadow-lg">
+                  <div className="relative">
+                    <Radio className="w-6 h-6 text-red-500" />
+                    <div className="absolute inset-0 w-6 h-6 bg-red-500 rounded-full animate-ping opacity-30" />
+                  </div>
+                  <span className="text-gray-800 font-bold text-xl">{liveSession.name}</span>
+                </div>
+                <Badge className="px-4 py-1.5 text-sm bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/30 border-0">
+                  {liveSession.isActive ? '● LIVE' : '○ PAUSED'}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/50 backdrop-blur-sm border border-white/60 shadow-lg">
+                  <Timer className="w-5 h-5 text-indigo-600" />
+                  <span className="text-gray-800 font-mono font-bold text-lg">{formatElapsed(elapsedTime)}</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsFullscreen(false)}
+                  className="rounded-2xl px-4 bg-white/50 backdrop-blur-sm border-white/60 hover:bg-white/80 shadow-lg"
+                >
+                  <Minimize2 className="w-4 h-4 mr-2" />
+                  Exit
+                </Button>
+              </div>
+            </div>
+            
+            {/* Stats Row - Glassmorphism Cards */}
+            <div className="grid grid-cols-5 gap-4">
+              <div className="relative overflow-hidden rounded-2xl p-4 text-center bg-gradient-to-br from-blue-500/10 to-blue-600/20 backdrop-blur-xl border border-blue-200/50 shadow-xl shadow-blue-500/10">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent" />
+                <div className="relative">
+                  <div className="text-4xl font-black text-blue-600 drop-shadow-sm">{activeStudents.length}</div>
+                  <div className="text-sm text-blue-600/80 font-semibold mt-1">Expected</div>
+                </div>
+              </div>
+              <div className="relative overflow-hidden rounded-2xl p-4 text-center bg-gradient-to-br from-emerald-500/10 to-green-600/20 backdrop-blur-xl border border-green-200/50 shadow-xl shadow-green-500/10">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent" />
+                <div className="relative">
+                  <div className="text-4xl font-black text-emerald-600 drop-shadow-sm">{realtimeStudents.filter(s => s.status === 'present').length}</div>
+                  <div className="text-sm text-emerald-600/80 font-semibold mt-1">Present</div>
+                </div>
+              </div>
+              <div className="relative overflow-hidden rounded-2xl p-4 text-center bg-gradient-to-br from-orange-500/10 to-amber-600/20 backdrop-blur-xl border border-orange-200/50 shadow-xl shadow-orange-500/10">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent" />
+                <div className="relative">
+                  <div className="text-4xl font-black text-orange-600 drop-shadow-sm">{realtimeStudents.filter(s => s.status === 'pending').length}</div>
+                  <div className="text-sm text-orange-600/80 font-semibold mt-1">Waiting</div>
+                </div>
+              </div>
+              <div className="relative overflow-hidden rounded-2xl p-4 text-center bg-gradient-to-br from-violet-500/10 to-purple-600/20 backdrop-blur-xl border border-purple-200/50 shadow-xl shadow-purple-500/10">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent" />
+                <div className="relative">
+                  <div className="text-4xl font-black text-violet-600 drop-shadow-sm">
+                    {realtimeStudents.length > 0 ? Math.round((realtimeStudents.filter(s => s.status === 'present').length / realtimeStudents.length) * 100) : 0}%
+                  </div>
+                  <div className="text-sm text-violet-600/80 font-semibold mt-1">Attendance</div>
+                </div>
+              </div>
+              <div className="relative overflow-hidden rounded-2xl p-4 text-center bg-gradient-to-br from-cyan-500/10 to-teal-600/20 backdrop-blur-xl border border-cyan-200/50 shadow-xl shadow-cyan-500/10">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent" />
+                <div className="relative">
+                  <div className="text-4xl font-black text-cyan-600 drop-shadow-sm">{sessionLogs.length}</div>
+                  <div className="text-sm text-cyan-600/80 font-semibold mt-1">Detections</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Excluded count - Glassmorphism */}
+        {excludedStudents.size > 0 && (
+          <div className="mx-4 mt-4 px-4 py-3 rounded-2xl backdrop-blur-xl bg-red-500/10 border border-red-200/50 flex items-center justify-between shadow-lg">
+            <span className="text-red-700 text-sm font-medium flex items-center gap-2">
+              <XCircle className="w-5 h-5" />
+              {excludedStudents.size} student(s) excluded from this event
+            </span>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setExcludedStudents(new Set())}
+              className="text-red-600 hover:text-red-800 hover:bg-red-100/50 rounded-xl"
+            >
+              Clear All
+            </Button>
+          </div>
+        )}
+
+        {/* Fullscreen Grid - Glassmorphism Cards */}
+        <div className="p-4 overflow-auto">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-4">
+            {realtimeStudents
+              .filter(s => !excludedStudents.has(s.student.user_id))
+              .map((rs, idx) => {
+              const detectionCount = getDetectionCount(rs.student.user_id)
+              const confidencePercent = rs.confidence ? Math.round(rs.confidence > 1 ? rs.confidence : rs.confidence * 100) : null
+              
+              return (
+                <div
+                  key={rs.student.user_id}
+                  className={`
+                    relative rounded-2xl overflow-hidden transition-all duration-500 cursor-pointer group
+                    backdrop-blur-xl border shadow-xl
+                    ${rs.status === 'present' 
+                      ? 'bg-gradient-to-br from-white/80 to-green-50/80 border-green-300/50 shadow-green-500/20' 
+                      : 'bg-white/40 border-white/30 opacity-60 grayscale'
+                    }
+                    ${rs.animationState === 'just-arrived' 
+                      ? 'scale-105 ring-4 ring-green-400/50 shadow-2xl shadow-green-500/40 z-10' 
+                      : 'hover:scale-102 hover:shadow-2xl'
+                    }
+                  `}
+                >
+                  {/* Shine effect */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-transparent pointer-events-none" />
+
+                  {/* Row number - Glass pill */}
+                  <div className="absolute top-2 left-2 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-bold z-10 shadow-lg">
+                    #{idx + 1}
+                  </div>
+
+                  {/* Status badge - Glass pill */}
+                  <div className={`absolute top-2 right-2 px-2.5 py-1 rounded-full text-[10px] font-bold z-10 shadow-lg backdrop-blur-sm ${
+                    rs.status === 'present' 
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' 
+                      : 'bg-gray-500/80 text-white'
+                  }`}>
+                    {rs.status === 'present' ? '✓ Present' : '○ Waiting'}
+                  </div>
+
+                  {/* Exclude button - Glass effect */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggleExcludeStudent(rs.student.user_id)
+                    }}
+                    className="absolute top-2 left-12 w-7 h-7 rounded-full bg-red-500/90 backdrop-blur-sm text-white flex items-center justify-center text-lg z-20 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-red-600 shadow-lg hover:scale-110"
+                    title="Exclude from event"
+                  >
+                    ×
+                  </button>
+
+                  {/* Detection badge */}
+                  {detectionCount > 1 && (
+                    <div className="absolute top-11 left-2 px-2 py-0.5 rounded-full bg-blue-500/90 backdrop-blur-sm text-white text-[10px] font-bold z-10 shadow-lg">
+                      {detectionCount}× seen
+                    </div>
+                  )}
+
+                  {/* Image with glass frame */}
+                  <div className="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 m-1.5 rounded-xl overflow-hidden shadow-inner">
+                    {rs.captureImage ? (
+                      <img src={rs.captureImage} alt="" className="w-full h-full object-cover" />
+                    ) : rs.student.profile_image_url ? (
+                      <img src={rs.student.profile_image_url} alt="" className={`w-full h-full object-cover ${rs.status !== 'present' ? 'grayscale opacity-50' : ''}`} />
+                    ) : (
+                      <div className={`w-full h-full flex items-center justify-center ${
+                        rs.status === 'present' 
+                          ? 'bg-gradient-to-br from-green-100 to-emerald-200' 
+                          : 'bg-gradient-to-br from-gray-100 to-gray-200'
+                      }`}>
+                        <Users className={`w-12 h-12 ${rs.status === 'present' ? 'text-green-500' : 'text-gray-400'}`} />
+                      </div>
+                    )}
+
+                    {/* Just arrived celebration */}
+                    {rs.animationState === 'just-arrived' && (
+                      <div className="absolute inset-0 bg-gradient-to-t from-green-500/40 to-transparent flex items-center justify-center">
+                        <div className="relative">
+                          <CheckCircle2 className="w-16 h-16 text-white drop-shadow-lg animate-bounce" />
+                          <div className="absolute inset-0 w-16 h-16 bg-white rounded-full animate-ping opacity-30" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Confidence bar - Gradient */}
+                  {confidencePercent && (
+                    <div className="mx-1.5 h-1.5 bg-gray-200/50 rounded-full overflow-hidden backdrop-blur-sm">
+                      <div 
+                        className={`h-full transition-all duration-500 rounded-full ${
+                          confidencePercent > 80 
+                            ? 'bg-gradient-to-r from-green-400 to-emerald-500' 
+                            : confidencePercent > 60 
+                              ? 'bg-gradient-to-r from-yellow-400 to-orange-500' 
+                              : 'bg-gradient-to-r from-red-400 to-rose-500'
+                        }`}
+                        style={{ width: `${confidencePercent}%` }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Info - Glass footer */}
+                  <div className="p-2.5 bg-gradient-to-t from-white/80 to-transparent backdrop-blur-sm">
+                    <p className="text-sm font-bold text-gray-800 truncate">{rs.student.full_name}</p>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-xs text-gray-500 font-medium">{rs.student.form}</span>
+                      {rs.lastSeen && (
+                        <span className="text-xs font-bold text-emerald-600 bg-emerald-100/50 px-2 py-0.5 rounded-full">
+                          {new Date(rs.lastSeen).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      )}
+                    </div>
+                    {confidencePercent && (
+                      <div className="mt-1.5 flex items-center gap-1">
+                        <span className="text-[10px] text-gray-500">Confidence:</span>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                          confidencePercent > 80 
+                            ? 'bg-green-100 text-green-700' 
+                            : confidencePercent > 60 
+                              ? 'bg-yellow-100 text-yellow-700' 
+                              : 'bg-red-100 text-red-700'
+                        }`}>{confidencePercent}%</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   )
 }
