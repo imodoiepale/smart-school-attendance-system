@@ -68,6 +68,13 @@ export function LiveEventManager({ students, cameras, initialLogs = [], onAttend
   const channelRef = useRef<any>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const activityScrollRef = useRef<HTMLDivElement>(null)
+  const detectionAudioRef = useRef<HTMLAudioElement | null>(null)
+
+  // Initialize detection sound
+  useEffect(() => {
+    detectionAudioRef.current = new Audio('/happy-message-ping-351298.mp3')
+    detectionAudioRef.current.volume = 0.5
+  }, [])
 
   // End session dialog state
   const [showEndDialog, setShowEndDialog] = useState(false)
@@ -196,6 +203,12 @@ export function LiveEventManager({ students, cameras, initialLogs = [], onAttend
         (payload: any) => {
           console.log('🎯 LIVE: New attendance detected!', payload.new?.user_name)
           const newLog = payload.new as AttendanceLog
+
+          // Play detection sound
+          if (detectionAudioRef.current) {
+            detectionAudioRef.current.currentTime = 0
+            detectionAudioRef.current.play().catch(() => {})
+          }
 
           // Always update session logs
           setSessionLogs(prev => [newLog, ...prev])

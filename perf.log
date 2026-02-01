@@ -681,3 +681,9 @@
 2026-02-01T09:48:19.974Z - Fetch https://qrtwgeypflxschcgzinb.supabase.co/rest/v1/camera_metadata?select=*&order=display_name.asc took 98ms
 2026-02-01T09:48:20.029Z - Fetch https://qrtwgeypflxschcgzinb.supabase.co/rest/v1/user_registry?select=*&person_type=eq.student&order=full_name.asc took 3ms
 2026-02-01T09:48:21.547Z - Fetch https://qrtwgeypflxschcgzinb.supabase.co/rest/v1/events?select=*&order=start_date.desc&limit=100 took 1532ms
+2026-02-01T10:01:32.141Z - Fetch https://qrtwgeypflxschcgzinb.supabase.co/auth/v1/user took 788ms
+2026-02-01T10:01:32.525Z - Fetch https://qrtwgeypflxschcgzinb.supabase.co/rest/v1/attendance_logs?select=*&created_at=gte.2026-01-31T21%3A00%3A00.000Z&order=created_at.desc took 342ms
+2026-02-01T10:01:32.672Z - Fetch https://qrtwgeypflxschcgzinb.supabase.co/rest/v1/user_registry?select=*&person_type=eq.student&order=full_name.asc took 460ms
+2026-02-01T10:01:32.711Z - Fetch https://qrtwgeypflxschcgzinb.supabase.co/rest/v1/camera_metadata?select=*&order=display_name.asc took 516ms
+2026-02-01T10:01:33.111Z - Fetch https://qrtwgeypflxschcgzinb.supabase.co/rest/v1/events?select=*&order=start_date.desc&limit=100 took 909ms
+2026-02-01T10:01:33.309Z - Fetch https://qrtwgeypflxschcgzinb.supabase.co/rest/v1/attendance_logs?select=*&created_at=gte.2026-01-24T21%3A00%3A00.000Z&order=created_at.desc&limit=5000 took 1121ms
